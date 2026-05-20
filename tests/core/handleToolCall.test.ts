@@ -9,6 +9,33 @@ function responseData(response: any): any {
 }
 
 describe('handleToolCall', () => {
+  describe('download_paper fallback', () => {
+    it('routes unsupported platform downloads through the fallback funnel including Sci-Hub', async () => {
+      const searchers = {
+        crossref: {
+          getCapabilities: () => ({ download: false }),
+          getPaperByDoi: async () => null
+        },
+        scihub: {
+          downloadPdf: async () => '/tmp/fallback.pdf'
+        }
+      } as any;
+
+      const response = await handleToolCall(
+        'download_paper',
+        { paperId: '10.1000/example', platform: 'crossref', savePath: './downloads' },
+        searchers
+      );
+      const text = response.content[0].text;
+      const data = responseData(response);
+
+      expect(text).toContain('PDF downloaded successfully via fallback');
+      expect(data.status).toBe('ok');
+      expect(data.path).toBe('/tmp/fallback.pdf');
+      expect(data.attempts.map((attempt: any) => attempt.stage)).toContain('scihub');
+    });
+  });
+
   describe('get_paper_by_doi all', () => {
     it('skips failed sources and reports warnings without failing the whole lookup', async () => {
       const matchingPaper = PaperFactory.create({

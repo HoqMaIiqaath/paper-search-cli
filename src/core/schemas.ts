@@ -1,36 +1,20 @@
 import { z } from 'zod';
+import { getGenericSearchToolPlatform, isKnownSearchPlatform } from './platformMetadata.js';
 
 const SortBySchema = z.enum(['relevance', 'date', 'citations']);
 const SortOrderSchema = z.enum(['asc', 'desc']);
+const SearchPlatformSchema = z
+  .string()
+  .min(1)
+  .refine(value => value === 'all' || isKnownSearchPlatform(value), {
+    message: 'Unsupported search platform'
+  });
 
 export const SearchPapersSchema = z
   .object({
     query: z.string().min(1),
     platform: z
-      .enum([
-        'arxiv',
-        'webofscience',
-        'pubmed',
-        'wos',
-        'biorxiv',
-        'medrxiv',
-        'semantic',
-        'iacr',
-        'googlescholar',
-        'scholar',
-        'scihub',
-        'sciencedirect',
-        'springer',
-        'scopus',
-        'crossref',
-        'openalex',
-        'unpaywall',
-        'pmc',
-        'europepmc',
-        'core',
-        'openaire',
-        'all'
-      ])
+      .union([SearchPlatformSchema, z.literal('all')])
       .optional()
       .default('crossref'),
     sources: z.string().optional(),
@@ -131,19 +115,9 @@ export const SearchIACRSchema = z
 export const DownloadPaperSchema = z
   .object({
     paperId: z.coerce.string().min(1),
-    platform: z.enum([
-      'arxiv',
-      'biorxiv',
-      'medrxiv',
-      'semantic',
-      'iacr',
-      'scihub',
-      'springer',
-      'wiley',
-      'pmc',
-      'europepmc',
-      'core'
-    ]),
+    platform: z.coerce.string().min(1).refine(value => value === 'wiley' || isKnownSearchPlatform(value), {
+      message: 'Unsupported download platform'
+    }),
     savePath: z.coerce.string().optional()
   })
   .strip();
@@ -271,6 +245,21 @@ export const SearchPMCStyleSchema = z
   })
   .strip();
 
+export const GenericPlatformSearchSchema = z
+  .object({
+    query: z.string().min(1),
+    maxResults: z.number().int().min(1).max(100).optional().default(10),
+    year: z.string().optional(),
+    author: z.string().optional(),
+    journal: z.string().optional(),
+    venue: z.string().optional(),
+    articleTitle: z.string().optional(),
+    startRecord: z.number().int().min(1).optional(),
+    sortBy: SortBySchema.optional().default('relevance'),
+    sortOrder: SortOrderSchema.optional().default('desc')
+  })
+  .strip();
+
 export const DownloadWithFallbackSchema = z
   .object({
     source: z.coerce.string().min(1),
@@ -278,7 +267,7 @@ export const DownloadWithFallbackSchema = z
     doi: z.coerce.string().optional().default(''),
     title: z.coerce.string().optional().default(''),
     savePath: z.coerce.string().optional(),
-    useSciHub: z.boolean().optional().default(false)
+    useSciHub: z.boolean().optional().default(true)
   })
   .strip();
 
@@ -289,6 +278,7 @@ export const GetPlatformStatusSchema = z
   .strip();
 
 export type ToolName =
+  | string
   | 'search_papers'
   | 'search_arxiv'
   | 'search_webofscience'
@@ -318,6 +308,10 @@ export type ToolName =
   | 'download_with_fallback';
 
 export function parseToolArgs(toolName: ToolName, args: unknown): any {
+  if (getGenericSearchToolPlatform(String(toolName))) {
+    return GenericPlatformSearchSchema.parse(args);
+  }
+
   switch (toolName) {
     case 'search_papers':
       return SearchPapersSchema.parse(args);

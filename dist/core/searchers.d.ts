@@ -17,6 +17,11 @@ import { PMCSearcher } from '../platforms/PMCSearcher.js';
 import { EuropePMCSearcher } from '../platforms/EuropePMCSearcher.js';
 import { CORESearcher } from '../platforms/CORESearcher.js';
 import { OpenAIRESearcher } from '../platforms/OpenAIRESearcher.js';
+import { DBLPSearcher } from '../platforms/DBLPSearcher.js';
+import { IEEESearcher } from '../platforms/IEEESearcher.js';
+import { ACMSearcher } from '../platforms/ACMSearcher.js';
+import { USENIXSearcher } from '../platforms/USENIXSearcher.js';
+import { OpenReviewSearcher } from '../platforms/OpenReviewSearcher.js';
 export interface Searchers {
     arxiv: ArxivSearcher;
     webofscience: WebOfScienceSearcher;
@@ -40,6 +45,12 @@ export interface Searchers {
     europepmc: EuropePMCSearcher;
     core: CORESearcher;
     openaire: OpenAIRESearcher;
+    dblp: DBLPSearcher;
+    ieee: IEEESearcher;
+    acm: ACMSearcher;
+    usenix: USENIXSearcher;
+    openreview: OpenReviewSearcher;
+    springerlink: SpringerSearcher;
 }
 export declare function initializeSearchers(): Searchers;
 //# sourceMappingURL=searchers.d.ts.map

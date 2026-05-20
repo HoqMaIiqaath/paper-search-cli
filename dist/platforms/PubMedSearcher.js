@@ -179,6 +179,14 @@ export class PubMedSearcher extends PaperSource {
      * 解析XML响应
      */
     async parseXmlResponse(xmlData) {
+        const trimmed = (xmlData || '').trim();
+        if (!trimmed) {
+            throw new Error('Empty XML response received from PubMed');
+        }
+        if (!trimmed.startsWith('<')) {
+            const preview = trimmed.slice(0, 120).replace(/\s+/g, ' ');
+            throw new Error(`Invalid XML response received (expected markup, got: "${preview}...")`);
+        }
         const parser = new xml2js.Parser({
             explicitArray: false, // 简化数组处理
             mergeAttrs: false,

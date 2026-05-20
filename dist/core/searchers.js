@@ -17,6 +17,11 @@ import { PMCSearcher } from '../platforms/PMCSearcher.js';
 import { EuropePMCSearcher } from '../platforms/EuropePMCSearcher.js';
 import { CORESearcher } from '../platforms/CORESearcher.js';
 import { OpenAIRESearcher } from '../platforms/OpenAIRESearcher.js';
+import { DBLPSearcher } from '../platforms/DBLPSearcher.js';
+import { IEEESearcher } from '../platforms/IEEESearcher.js';
+import { ACMSearcher } from '../platforms/ACMSearcher.js';
+import { USENIXSearcher } from '../platforms/USENIXSearcher.js';
+import { OpenReviewSearcher } from '../platforms/OpenReviewSearcher.js';
 import { logDebug } from '../utils/Logger.js';
 let searchers = null;
 export function initializeSearchers() {
@@ -43,6 +48,11 @@ export function initializeSearchers() {
     const europePmcSearcher = new EuropePMCSearcher();
     const coreSearcher = new CORESearcher();
     const openAireSearcher = new OpenAIRESearcher();
+    const dblpSearcher = new DBLPSearcher();
+    const ieeeSearcher = new IEEESearcher(process.env.IEEE_API_KEY);
+    const acmSearcher = new ACMSearcher(process.env.CROSSREF_MAILTO);
+    const usenixSearcher = new USENIXSearcher(dblpSearcher);
+    const openReviewSearcher = new OpenReviewSearcher();
     searchers = {
         arxiv: arxivSearcher,
         webofscience: wosSearcher,
@@ -65,7 +75,13 @@ export function initializeSearchers() {
         pmc: pmcSearcher,
         europepmc: europePmcSearcher,
         core: coreSearcher,
-        openaire: openAireSearcher
+        openaire: openAireSearcher,
+        dblp: dblpSearcher,
+        ieee: ieeeSearcher,
+        acm: acmSearcher,
+        usenix: usenixSearcher,
+        openreview: openReviewSearcher,
+        springerlink: springerSearcher
     };
     logDebug('Searchers initialized successfully');
     return searchers;

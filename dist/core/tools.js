@@ -1,4 +1,5 @@
-export const TOOLS = [
+import { PLATFORM_METADATA, SEARCH_PLATFORM_VALUES } from './platformMetadata.js';
+const BASE_TOOLS = [
     {
         name: 'search_papers',
         description: 'Search academic papers from multiple sources including arXiv, Web of Science, etc.',
@@ -8,30 +9,7 @@ export const TOOLS = [
                 query: { type: 'string', description: 'Search query string' },
                 platform: {
                     type: 'string',
-                    enum: [
-                        'arxiv',
-                        'webofscience',
-                        'pubmed',
-                        'wos',
-                        'biorxiv',
-                        'medrxiv',
-                        'semantic',
-                        'iacr',
-                        'googlescholar',
-                        'scholar',
-                        'scihub',
-                        'sciencedirect',
-                        'springer',
-                        'scopus',
-                        'crossref',
-                        'openalex',
-                        'unpaywall',
-                        'pmc',
-                        'europepmc',
-                        'core',
-                        'openaire',
-                        'all'
-                    ],
+                    enum: [...SEARCH_PLATFORM_VALUES, 'all'],
                     description: 'Platform to search (default: crossref). Use --sources for comma-separated multi-source search. Note: Wiley only supports PDF download by DOI.'
                 },
                 sources: {
@@ -302,15 +280,15 @@ export const TOOLS = [
     },
     {
         name: 'download_paper',
-        description: 'Download PDF file of an academic paper',
+        description: 'Download PDF file of an academic paper. Native downloads are tried first; unsupported or failed native downloads use the fallback funnel ending with Sci-Hub.',
         inputSchema: {
             type: 'object',
             properties: {
                 paperId: { type: 'string', description: 'Paper ID (e.g., arXiv ID, DOI for Sci-Hub)' },
                 platform: {
                     type: 'string',
-                    enum: ['arxiv', 'biorxiv', 'medrxiv', 'semantic', 'iacr', 'scihub', 'springer', 'wiley', 'pmc', 'europepmc', 'core'],
-                    description: 'Platform where the paper is from'
+                    enum: [...new Set([...SEARCH_PLATFORM_VALUES, 'wiley'])],
+                    description: 'Platform where the paper is from. If native download is unsupported or fails, the fallback funnel is used.'
                 },
                 savePath: {
                     type: 'string',
@@ -619,7 +597,7 @@ export const TOOLS = [
     },
     {
         name: 'download_with_fallback',
-        description: 'Download with an open-access-first fallback chain: source-native download, metadata PDF URL, PMC/Europe PMC/CORE/OpenAIRE discovery, Unpaywall DOI resolution, optional Sci-Hub opt-in.',
+        description: 'Download with a funnel fallback chain: source-native download, metadata PDF URL, PMC/Europe PMC/CORE/OpenAIRE discovery, Unpaywall DOI resolution, then Sci-Hub as the final fallback unless useSciHub=false.',
         inputSchema: {
             type: 'object',
             properties: {
@@ -630,11 +608,60 @@ export const TOOLS = [
                 savePath: { type: 'string', description: 'Directory to save the PDF file' },
                 useSciHub: {
                     type: 'boolean',
-                    description: 'Explicitly opt in to Sci-Hub as the final fallback. Default: false.'
+                    description: 'Use Sci-Hub as the final fallback. Default: true. Set false only to suppress this final stage.'
                 }
             },
             required: ['source', 'paperId']
         }
     }
 ];
+const GENERIC_SEARCH_PROPERTIES = {
+    query: { type: 'string', description: 'Search query string' },
+    maxResults: {
+        type: 'number',
+        minimum: 1,
+        maximum: 100,
+        description: 'Maximum number of results to return'
+    },
+    year: { type: 'string', description: 'Year filter (e.g., "2023", "2020-2023")' },
+    author: { type: 'string', description: 'Author name filter' },
+    journal: { type: 'string', description: 'Journal or publication name filter' },
+    venue: { type: 'string', description: 'Venue filter for platforms that expose venue metadata' },
+    articleTitle: { type: 'string', description: 'Article title filter for IEEE Xplore' },
+    startRecord: { type: 'number', minimum: 1, description: 'Start record for APIs that support offset pagination' },
+    sortBy: {
+        type: 'string',
+        enum: ['relevance', 'date', 'citations'],
+        description: 'Sort results by relevance, date, or citations'
+    },
+    sortOrder: {
+        type: 'string',
+        enum: ['asc', 'desc'],
+        description: 'Sort order: ascending or descending'
+    }
+};
+function createRegistrySearchTools() {
+    const tools = PLATFORM_METADATA
+        .filter(platform => platform.directTool && platform.toolName)
+        .map(platform => ({
+        name: platform.toolName,
+        description: platform.description || `Search academic papers from ${platform.displayName}`,
+        inputSchema: {
+            type: 'object',
+            properties: GENERIC_SEARCH_PROPERTIES,
+            required: ['query']
+        }
+    }));
+    tools.push({
+        name: 'search_springerlink',
+        description: 'Search SpringerLink through the existing Springer Nature API adapter. Requires SPRINGER_API_KEY.',
+        inputSchema: {
+            type: 'object',
+            properties: GENERIC_SEARCH_PROPERTIES,
+            required: ['query']
+        }
+    });
+    return tools;
+}
+export const TOOLS = [...BASE_TOOLS, ...createRegistrySearchTools()];
 //# sourceMappingURL=tools.js.map

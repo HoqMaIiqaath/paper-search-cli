@@ -9,8 +9,10 @@ import { initializeSearchers } from './core/searchers.js';
 import { handleToolCall } from './core/handleToolCall.js';
 import { diagnoseError, diagnoseToolResult, diagnosticContextFromCli, getRequirementStatus } from './core/diagnostics.js';
 import { CONFIG_KEYS, getConfigPath, importEnvFile, initUserConfig, listConfigEntries, loadUserConfigIntoEnv, maskValue, readUserConfig, assertConfigKey, setUserConfigValue, unsetUserConfigValue } from './config/ConfigService.js';
+import { setupGlobalProxy } from './utils/HttpClient.js';
 dotenv.config();
 loadUserConfigIntoEnv();
+setupGlobalProxy();
 class CliError extends Error {
     code;
     exitCode;

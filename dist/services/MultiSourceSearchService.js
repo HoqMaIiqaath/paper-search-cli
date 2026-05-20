@@ -1,44 +1,18 @@
 import { TIMEOUTS } from '../config/constants.js';
 import { PaperFactory } from '../models/Paper.js';
 import { withTimeout } from '../utils/SecurityUtils.js';
-const DEFAULT_ALL_SOURCES = [
-    'crossref',
-    'openalex',
-    'pubmed',
-    'pmc',
-    'europepmc',
-    'arxiv',
-    'biorxiv',
-    'medrxiv',
-    'semantic',
-    'iacr',
-    'core',
-    'openaire',
-    'googlescholar',
-    'webofscience',
-    'sciencedirect',
-    'springer',
-    'scopus',
-    'scihub',
-    'unpaywall'
-];
-const ALIASES = {
-    google_scholar: 'googlescholar',
-    webofscience: 'webofscience',
-    wos: 'webofscience',
-    europe_pmc: 'europepmc',
-    pubmed_central: 'pmc'
-};
+import { getAliasMap, getDefaultAllSources, resolvePlatformId } from '../core/platformMetadata.js';
+const ALIASES = getAliasMap();
 export function parseSourceList(sources, searchers) {
     const requested = !sources || sources.trim() === '' ? 'crossref' : sources.trim();
     if (requested.toLowerCase() === 'all') {
-        return DEFAULT_ALL_SOURCES.filter(source => source in searchers);
+        return getDefaultAllSources().filter(source => source in searchers);
     }
     return requested
         .split(',')
         .map(source => source.trim().toLowerCase())
         .filter(Boolean)
-        .map(source => ALIASES[source] || source)
+        .map(source => ALIASES[source] || resolvePlatformId(source))
         .filter((source, index, values) => values.indexOf(source) === index)
         .filter(source => source in searchers);
 }
@@ -92,13 +66,13 @@ export function dedupePapers(papers) {
     return out;
 }
 function paperKey(paper) {
-    const doi = paper.doi.trim().toLowerCase();
+    const doi = (paper.doi || '').trim().toLowerCase();
     if (doi)
         return `doi:${doi}`;
-    const title = paper.title.trim().toLowerCase();
-    const authors = paper.authors.join(';').trim().toLowerCase();
+    const title = (paper.title || '').trim().toLowerCase();
+    const authors = (paper.authors || []).join(';').trim().toLowerCase();
     if (title)
         return `title:${title}|authors:${authors}`;
-    return `id:${paper.source}:${paper.paperId}`;
+    return `id:${paper.source || 'unknown'}:${paper.paperId || 'unknown'}`;
 }
 //# sourceMappingURL=MultiSourceSearchService.js.map

@@ -63,6 +63,9 @@ export declare const API_ENDPOINTS: {
     readonly BIORXIV: "https://api.biorxiv.org";
     readonly MEDRXIV: "https://api.medrxiv.org";
     readonly WILEY_TDM: "https://api.wiley.com/onlinelibrary/tdm/v1";
+    readonly DBLP: "https://dblp.org/search/publ/api";
+    readonly IEEE_XPLORE: "https://ieeexploreapi.ieee.org/api/v1/search/articles";
+    readonly OPENREVIEW: "https://api.openreview.net";
 };
 /**
  * Default User Agent
@@ -130,6 +133,9 @@ declare const _default: {
         readonly BIORXIV: "https://api.biorxiv.org";
         readonly MEDRXIV: "https://api.medrxiv.org";
         readonly WILEY_TDM: "https://api.wiley.com/onlinelibrary/tdm/v1";
+        readonly DBLP: "https://dblp.org/search/publ/api";
+        readonly IEEE_XPLORE: "https://ieeexploreapi.ieee.org/api/v1/search/articles";
+        readonly OPENREVIEW: "https://api.openreview.net";
     };
     USER_AGENT: string;
     DEFAULT_MAILTO: string;

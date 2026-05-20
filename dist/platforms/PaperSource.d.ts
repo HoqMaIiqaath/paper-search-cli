@@ -13,6 +13,8 @@ export interface SearchOptions {
     author?: string;
     /** 期刊过滤 */
     journal?: string;
+    /** 会议或平台 venue 过滤 */
+    venue?: string;
     /** 学科分类过滤 */
     category?: string;
     /** 排序方式 */
@@ -37,6 +39,10 @@ export interface SearchOptions {
     documentType?: 'ar' | 'cp' | 're' | 'bk' | 'ch';
     /** 出版物类型 (PubMed) */
     publicationType?: string[];
+    /** 文章标题过滤 (IEEE Xplore) */
+    articleTitle?: string;
+    /** 起始记录位置 (IEEE Xplore) */
+    startRecord?: number;
 }
 export interface DownloadOptions {
     /** 保存路径 */

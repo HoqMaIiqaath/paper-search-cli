@@ -3,7 +3,7 @@ name: paper-search
 description: |
   学术文献检索与论文获取调度器，基于 paper-search CLI，而不是 MCP server。
   用于：搜索论文、查找相似研究、做文献综述初筛、验证 PMID/DOI、下载论文 PDF、
-  调用 Crossref/OpenAlex/PubMed/PMC/Europe PMC/arXiv/bioRxiv/medRxiv/Semantic Scholar/CORE/OpenAIRE/IACR 等来源，
+  调用 Crossref/OpenAlex/PubMed/PMC/Europe PMC/arXiv/bioRxiv/medRxiv/Semantic Scholar/CORE/OpenAIRE/DBLP/ACM/USENIX/OpenReview/IACR 等来源，
   以及使用 Semantic Scholar Open Access snippet 索引检索论文正文片段中的方法学细节。
   当用户提到“搜文献”“找论文”“文献检索”“search papers”“find papers”“literature search”
   “查一下有没有相关研究”“帮我找几篇参考文献”“看看别人怎么做的”“下载论文 PDF”
@@ -26,7 +26,7 @@ command -v paper-search
 paper-search status --pretty
 ```
 
-如果涉及 Semantic Scholar 正文片段、CORE、Unpaywall、Web of Science、Scopus、ScienceDirect、Springer 或 Wiley 等需要 key/邮箱的能力，再运行：
+如果涉及 Semantic Scholar 正文片段、CORE、Unpaywall、Web of Science、IEEE Xplore、Scopus、ScienceDirect、Springer/SpringerLink 或 Wiley 等需要 key/邮箱的能力，再运行：
 
 ```bash
 paper-search config doctor --pretty
@@ -65,6 +65,8 @@ paper-search status --pretty
 paper-search search "machine learning" --platform crossref --max-results 5 --pretty
 paper-search search "osteoarthritis occupational exposure" --platform pubmed --max-results 10 --pretty
 paper-search search "transformer attention mechanism" --sources arxiv,semantic,crossref --max-results 5 --pretty
+paper-search search "graph neural networks" --platform dblp --max-results 5 --pretty
+paper-search search "large language models" --platform openreview --max-results 5 --pretty
 ```
 
 `--platform all` 或 `--sources all` 只用于需要广覆盖召回时。精确任务优先指定平台或 `--sources`。
@@ -74,6 +76,8 @@ paper-search search "transformer attention mechanism" --sources arxiv,semantic,c
 ```bash
 paper-search run search_pubmed --arg query="osteoarthritis occupational exposure" --arg maxResults=10 --pretty
 paper-search run search_openalex --arg query="causal inference target trial emulation" --arg maxResults=5 --pretty
+paper-search run search_acm --arg query="software testing" --arg maxResults=5 --pretty
+paper-search run search_usenix --arg query="file systems" --arg maxResults=5 --pretty
 paper-search run get_paper_by_doi --arg doi="10.xxxx/xxxxx" --pretty
 ```
 
@@ -88,10 +92,10 @@ paper-search run search_semantic_scholar --json-args '{"query":"graph neural net
 ```bash
 paper-search download 2301.12345 --platform arxiv --save-path ./downloads --pretty
 paper-search run download_paper --arg paperId="10.xxxx/xxxxx" --arg platform=springer --arg savePath="./downloads" --pretty
-paper-search run download_with_fallback --json-args '{"doi":"10.xxxx/xxxxx","title":"Paper title","savePath":"./downloads","useSciHub":false}' --pretty
+paper-search run download_with_fallback --json-args '{"source":"crossref","paperId":"10.xxxx/xxxxx","doi":"10.xxxx/xxxxx","title":"Paper title","savePath":"./downloads"}' --pretty
 ```
 
-默认不要启用 Sci-Hub；只有用户明确要求并承担相应访问边界时，才把 `useSciHub` 设为 `true`。
+下载漏斗默认包含 Sci-Hub 作为最后兜底；只有用户明确要求关闭该阶段时，才把 `useSciHub` 设为 `false`。
 
 ## 平台选择
 
@@ -100,11 +104,18 @@ paper-search run download_with_fallback --json-args '{"doi":"10.xxxx/xxxxx","tit
 | 生物医学、临床、药学、公卫 | `pubmed` | `pmc`, `europepmc`, `semantic`, `crossref` |
 | 正文方法学片段 | `search_semantic_snippets` | 先用 `pubmed`/`semantic` 找题名和同义词 |
 | 计算机、AI、数学、物理 | `arxiv` | `semantic`, `crossref`, `openalex` |
+| 计算机文献目录/会议元数据 | `dblp` | `acm`, `usenix`, `openreview`, `ieee` 需要 key |
 | 跨学科广覆盖 | `crossref` | `openalex`, `semantic` |
 | 开放获取全文发现 | `pmc`, `europepmc`, `core`, `openaire`, `unpaywall` | `download_with_fallback` |
 | 密码学 | `iacr` | `arxiv` |
 | 引用统计排序 | `semantic`, `crossref`, `openalex` | `webofscience`, `scopus` 需要 key |
-| 出版商/付费数据库 | `webofscience`, `scopus`, `sciencedirect`, `springer`, `wiley` | 仅在 key 已配置时使用 |
+| 出版商/付费数据库 | `webofscience`, `ieee`, `scopus`, `sciencedirect`, `springer`/`springerlink`, `wiley` | 仅在 key 已配置时使用 |
+
+平台边界：
+
+- `acm` 通过 Crossref 的 ACM DOI 前缀检索元数据，不抓取 ACM Digital Library 页面。
+- `usenix` 通过 DBLP 返回 USENIX 相关会议/期刊元数据，不抓取 USENIX 搜索页。
+- `springerlink` 是 `springer` 的别名，仍需要 Springer API key。
 
 查询构建规则：
 

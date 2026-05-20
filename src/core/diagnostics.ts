@@ -1,3 +1,5 @@
+import { getGenericSearchToolPlatform, resolvePlatformId } from './platformMetadata.js';
+
 export interface ApiRequirement {
   id: string;
   platform: string;
@@ -122,6 +124,25 @@ export const API_REQUIREMENTS: ApiRequirement[] = [
       'Run `paper-search config doctor --pretty` and confirm `ELSEVIER_API_KEY` is configured.',
       'If Scopus works but ScienceDirect returns 401, request ScienceDirect Search API access in the Elsevier developer dashboard.',
       'Use Crossref, OpenAlex, Semantic Scholar, PubMed, or Europe PMC as metadata fallbacks while entitlement is unavailable.'
+    ]
+  },
+  {
+    id: 'ieee',
+    platform: 'ieee',
+    capability: 'IEEE Xplore metadata search',
+    tools: ['search_ieee', 'search_papers'],
+    keyGroups: [['IEEE_API_KEY']],
+    productAccess: 'IEEE Xplore Metadata API access',
+    commonFailures: [
+      'The IEEE API key is missing or invalid',
+      'The key is not enabled for IEEE Xplore Metadata API access',
+      'The query uses an unsupported IEEE Xplore search parameter'
+    ],
+    actions: [
+      'Run `paper-search config doctor --pretty` and confirm `IEEE_API_KEY` is configured.',
+      'Try `paper-search search "machine learning" --platform ieee --max-results 1 --pretty` as a minimal test.',
+      'Check the IEEE Developer Portal for Metadata API entitlement.',
+      'Remove optional filters first; then re-add year, author, journal, or sorting one at a time.'
     ]
   },
   {
@@ -257,7 +278,9 @@ const DIRECT_TOOL_PLATFORM: Record<string, string> = {
   search_semantic_scholar: 'semantic',
   search_semantic_snippets: 'semantic',
   search_sciencedirect: 'sciencedirect',
+  search_ieee: 'ieee',
   search_springer: 'springer',
+  search_springerlink: 'springerlink',
   search_scopus: 'scopus',
   search_wiley: 'wiley',
   search_crossref: 'crossref',
@@ -556,18 +579,13 @@ function platformFromArgs(args?: Record<string, unknown>): string | undefined {
 
 function platformFromTool(tool?: string): string | undefined {
   if (!tool) return undefined;
-  return DIRECT_TOOL_PLATFORM[tool];
+  return getGenericSearchToolPlatform(tool) || DIRECT_TOOL_PLATFORM[tool];
 }
 
 function normalizePlatform(platform?: string): string | undefined {
   if (!platform) return undefined;
   const normalized = platform.toLowerCase();
-  if (normalized === 'wos') return 'webofscience';
-  if (normalized === 'scholar') return 'googlescholar';
-  if (normalized === 'google_scholar') return 'googlescholar';
-  if (normalized === 'europe_pmc') return 'europepmc';
-  if (normalized === 'pubmed_central') return 'pmc';
-  return normalized;
+  return resolvePlatformId(normalized);
 }
 
 function requirementForPlatform(platform?: string): ApiRequirement | undefined {
@@ -611,6 +629,11 @@ function displayPlatform(platform?: string): string {
   if (platform === 'webofscience') return 'Web of Science';
   if (platform === 'sciencedirect') return 'ScienceDirect';
   if (platform === 'semantic') return 'Semantic Scholar';
+  if (platform === 'ieee') return 'IEEE Xplore';
+  if (platform === 'dblp') return 'DBLP';
+  if (platform === 'acm') return 'ACM Digital Library';
+  if (platform === 'usenix') return 'USENIX';
+  if (platform === 'openreview') return 'OpenReview';
   if (platform === 'multiple sources') return 'The selected sources';
   return platform.charAt(0).toUpperCase() + platform.slice(1);
 }

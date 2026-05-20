@@ -15,6 +15,7 @@ export const CONFIG_KEYS = [
   'NCBI_EMAIL',
   'NCBI_TOOL',
   'ELSEVIER_API_KEY',
+  'IEEE_API_KEY',
   'SPRINGER_API_KEY',
   'SPRINGER_OPENACCESS_API_KEY',
   'WILEY_TDM_TOKEN',
@@ -25,7 +26,9 @@ export const CONFIG_KEYS = [
   'DEFAULT_DOWNLOAD_PATH',
   'MAX_FILE_SIZE_MB',
   'RATE_LIMIT_REQUESTS_PER_MINUTE',
-  'RATE_LIMIT_BURST'
+  'RATE_LIMIT_BURST',
+  'HTTP_PROXY',
+  'HTTPS_PROXY'
 ] as const;
 
 export type ConfigKey = (typeof CONFIG_KEYS)[number];

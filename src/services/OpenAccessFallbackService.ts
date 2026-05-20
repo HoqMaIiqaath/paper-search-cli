@@ -9,6 +9,7 @@ export interface DownloadWithFallbackOptions {
   doi?: string;
   title?: string;
   savePath?: string;
+  /** When false, suppress the final Sci-Hub fallback. Default is true. */
   useSciHub?: boolean;
 }
 
@@ -50,7 +51,7 @@ export async function downloadWithFallback(
   const unpaywallResult = await tryUnpaywall(searchers, options.doi || '', savePath, attempts);
   if (unpaywallResult) return { status: 'ok', path: unpaywallResult, attempts };
 
-  if (options.useSciHub) {
+  if (options.useSciHub !== false) {
     const identifier = options.doi || options.title || options.paperId;
     try {
       const path = await searchers.scihub.downloadPdf(identifier, { savePath });
@@ -60,7 +61,7 @@ export async function downloadWithFallback(
       attempts.push({ stage: 'scihub', status: 'error', message: error?.message || String(error) });
     }
   } else {
-    attempts.push({ stage: 'scihub', status: 'skipped', message: 'Sci-Hub fallback disabled; pass useSciHub=true to opt in.' });
+    attempts.push({ stage: 'scihub', status: 'skipped', message: 'Sci-Hub fallback disabled by useSciHub=false.' });
   }
 
   return { status: 'error', attempts };

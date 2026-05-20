@@ -37,7 +37,16 @@ export class OpenAIRESearcher extends PaperSource {
   async search(query: string, options: SearchOptions = {}): Promise<Paper[]> {
     try {
       const xml = await this.searchXml(query, Math.min(options.maxResults || 10, 100));
-      const parsed = await xml2js.parseStringPromise(xml, {
+      const trimmed = (xml || '').trim();
+      if (!trimmed) {
+        throw new Error('Empty XML response received from OpenAIRE');
+      }
+      if (!trimmed.startsWith('<')) {
+        const preview = trimmed.slice(0, 120).replace(/\s+/g, ' ');
+        throw new Error(`Invalid XML response received (expected markup, got: "${preview}...")`);
+      }
+
+      const parsed = await xml2js.parseStringPromise(trimmed, {
         explicitArray: false,
         explicitCharkey: true,
         attrkey: '$',

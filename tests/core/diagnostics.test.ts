@@ -14,6 +14,7 @@ describe('diagnostics', () => {
     delete process.env.SPRINGER_API_KEY;
     delete process.env.SEMANTIC_SCHOLAR_API_KEY;
     delete process.env.WOS_API_KEY;
+    delete process.env.IEEE_API_KEY;
   });
 
   it('should report key-dependent capabilities and configuration state', () => {
@@ -27,6 +28,9 @@ describe('diagnostics', () => {
     expect(scopus?.keyGroups).toEqual([['ELSEVIER_API_KEY']]);
     expect(springer?.configured).toBe(false);
     expect(springer?.missingGroups).toEqual([['SPRINGER_API_KEY']]);
+    const ieee = requirements.find(item => item.id === 'ieee');
+    expect(ieee?.configured).toBe(false);
+    expect(ieee?.missingGroups).toEqual([['IEEE_API_KEY']]);
   });
 
   it('should diagnose provider product permission failures', () => {
@@ -55,6 +59,17 @@ describe('diagnostics', () => {
     expect(diagnostic?.category).toBe('missing_config');
     expect(diagnostic?.relatedConfigKeys).toContain('WOS_API_KEY');
     expect(diagnostic?.actions.join('\n')).toContain('WOS_API_KEY');
+  });
+
+  it('should diagnose missing IEEE API key for generic direct tools', () => {
+    const diagnostic = diagnoseError(
+      { message: 'IEEE API key is required. Please set IEEE_API_KEY environment variable.' },
+      { tool: 'search_ieee' }
+    );
+
+    expect(diagnostic?.category).toBe('missing_config');
+    expect(diagnostic?.platform).toBe('ieee');
+    expect(diagnostic?.relatedConfigKeys).toContain('IEEE_API_KEY');
   });
 
   it('should treat configured but rejected keys as invalid keys', () => {

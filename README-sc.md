@@ -9,7 +9,7 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
+![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
@@ -27,13 +27,13 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 
 ## 核心特性
 
-- **20 个学术来源/平台**：Crossref、OpenAlex、PubMed、PubMed Central、Europe PMC、arXiv、bioRxiv、medRxiv、Semantic Scholar、CORE、OpenAIRE、Web of Science、Google Scholar、IACR ePrint、Sci-Hub、ScienceDirect、Springer Nature、Wiley、Scopus、Unpaywall。
+- **25 个学术来源/平台**：Crossref、OpenAlex、PubMed、PubMed Central、Europe PMC、arXiv、bioRxiv、medRxiv、Semantic Scholar、CORE、OpenAIRE、DBLP、ACM Digital Library 元数据、USENIX 元数据、OpenReview、Web of Science、Google Scholar、IACR ePrint、Sci-Hub、IEEE Xplore、ScienceDirect、Springer Nature/SpringerLink、Wiley、Scopus、Unpaywall。
 - **单一命令入口**：安装后通过 `paper-search` 调用，适合终端、脚本和 agent。
 - **JSON 优先输出**：stdout 默认输出 JSON，stderr 保留给人类可读日志和错误。
 - **统一论文数据模型**：标准化标题、作者、DOI、来源、日期、摘要、PDF 链接、引用数和平台扩展字段。
 - **多源检索与去重**：用 `--sources crossref,openalex,pmc` 选择来源，或用 `platform=all` 尝试所有已注册检索来源，再按 DOI、标题+作者合并重复结果。
 - **Semantic Scholar 正文片段检索**：`search_semantic_snippets` 用于检索 Semantic Scholar Open Access snippet 索引中的正文片段，适合查找论文中的方法学细节。该功能需要 `SEMANTIC_SCHOLAR_API_KEY`。
-- **开放获取优先下载链**：`download_with_fallback` 会先尝试原生下载、结果里的 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall DOI 解析，只有显式开启时才把 Sci-Hub 作为最后兜底。
+- **漏斗式回退下载链**：`download_with_fallback` 会先尝试原生下载、结果里的 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall DOI 解析，最后默认使用 Sci-Hub 兜底，除非传入 `useSciHub=false`。
 - **限速与重试**：内置平台级限速和可重试 API 错误处理。
 - **PDF 下载支持**：支持 arXiv、bioRxiv、medRxiv、Semantic Scholar、IACR、Sci-Hub、Springer 开放获取、Wiley DOI 下载等路径。
 - **适合 agent 调用**：`tools`、`status`、`search`、`download`、`run` 覆盖简单检索和精确工具调用。
@@ -73,34 +73,90 @@ paper-search config doctor --pretty
 
 ## 支持的平台
 
+### 平台类型
+
+下面的能力表仍然是平台能力的准确信息来源。如果只是快速选择检索来源，可以先按这些类型判断：
+
+| 类型 | 平台 | 适合场景 |
+| --- | --- | --- |
+| 综合检索 | Crossref、OpenAlex、Semantic Scholar、Google Scholar | 广覆盖发现、DOI 元数据、引用线索、文献初筛 |
+| 医学/生命科学 | PubMed、PubMed Central、Europe PMC | 临床、生物医学、公卫、生物医学元数据和开放全文 |
+| 预印本/会议稿 | arXiv、bioRxiv、medRxiv、OpenReview、IACR ePrint | 跨学科预印本、生命科学/医学预印本、AI/ML 投稿和密码学 ePrint |
+| 计算机/工程 | DBLP、ACM Digital Library 元数据、IEEE Xplore、USENIX | CS 文献目录、工程数据库、系统/安全会议论文 |
+| 开放全文/仓储 | CORE、OpenAIRE、Unpaywall | 跨学科仓储发现和开放获取 PDF 回退路径 |
+| 引文库/出版商 | Web of Science、Scopus、ScienceDirect、Springer Nature/SpringerLink、Wiley | 机构权限型元数据、引文数据库、出版商记录和下载 |
+| DOI 定向获取 | Sci-Hub | DOI 定向获取，并作为 PDF 下载漏斗的最后自动兜底；除非传入 `useSciHub=false` |
+
+部分平台会跨多个实际工作流。例如 Semantic Scholar 既适合广覆盖检索，也常用于 CS/AI；arXiv 覆盖计算机、数学、物理和部分定量学科。这里按主要使用方式归类；做计算机方向检索时，通常会同时用“计算机/工程”和“预印本/会议稿”两组。
+
+### 能力矩阵
+
+#### 综合检索
+
 | 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
 | --- | --- | --- | --- | --- | --- | --- |
 | Crossref | ✅ | ❌ | ❌ | ✅ | ❌ | 默认搜索平台，广泛元数据覆盖 |
 | OpenAlex | ✅ | 🟡 条件支持 | ❌ | ✅ | ❌ | 广泛免费元数据；记录含开放链接时可用于回退下载 |
-| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | 物理、计算机、数学等预印本 |
-| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 引文数据库、日期排序、年份范围 |
+| Semantic Scholar | ✅ | ✅ | ✅ 正文片段 | ✅ | 🟡 可选* | AI 语义检索 + OA 正文片段 |
+| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | 广泛学术发现，基于页面解析 |
+
+#### 医学/生命科学
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
 | PubMed | ✅ | ❌ | ❌ | ❌ | 🟡 可选 | NCBI E-utilities 生物医学文献 |
 | PubMed Central | ✅ | ✅ | ✅ | ❌ | ❌ | 生物医学开放全文和 PMC PDF |
 | Europe PMC | ✅ | ✅ | ✅ | ❌ | ❌ | 生物医学元数据和开放全文链接 |
-| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | 广泛学术发现，基于页面解析 |
-| bioRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 生物学预印本 |
-| medRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 医学预印本 |
-| Semantic Scholar | ✅ | ✅ | ✅ 正文片段 | ✅ | 🟡 可选* | AI 语义检索 + OA 正文片段 |
+
+#### 计算机/工程
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
+| DBLP | ✅ | ❌ | ❌ | ❌ | ❌ | 通过官方 DBLP search API 检索计算机文献目录 |
+| ACM Digital Library | ✅ | ❌ | ❌ | ✅ | ❌ | 通过 Crossref 的 ACM DOI 前缀元数据检索；不抓取 ACM 页面 |
+| USENIX | ✅ | ❌ | ❌ | ❌ | ❌ | 基于 DBLP 的 USENIX 会议元数据；不抓取 USENIX 搜索页 |
+| IEEE Xplore | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 通过官方 IEEE Xplore Metadata API 检索 IEEE 元数据 |
+
+#### 开放全文/仓储
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
 | CORE | ✅ | 🟡 条件支持 | 🟡 条件支持 | ❌ | 🟡 可选 | 记录含 PDF 或全文链接时可下载 |
 | OpenAIRE | ✅ | 🟡 条件支持 | ❌ | ❌ | 🟡 可选 | 记录含开放链接时可用于回退下载 |
 | Unpaywall | 🟡 条件支持 | 🟡 条件支持 | ❌ | ❌ | ✅ 必需 | 仅支持 DOI 查询；需要 email；发现 OA PDF 时可下载 |
+
+#### 预印本/会议稿
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
+| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | 物理、计算机、数学等预印本 |
+| bioRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 生物学预印本 |
+| medRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | 医学预印本 |
+| OpenReview | ✅ | ❌ | ❌ | ❌ | ❌ | 通过公开 OpenReview notes search 检索会议投稿、评审和预印本 |
 | IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | 密码学论文 |
-| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | 基于 DOI 查询和下载 |
+
+#### 引文库/出版商
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 引文数据库、日期排序、年份范围 |
 | ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | Elsevier 元数据和摘要 |
-| Springer Nature | ✅ | 🟡 条件支持 | ❌ | ❌ | ✅ 必需 | 开放获取记录可下载；元数据 API 需要 key |
+| Springer Nature / SpringerLink | ✅ | 🟡 条件支持 | ❌ | ❌ | ✅ 必需 | `springerlink` 是现有 Springer Nature 集成的别名 |
 | Wiley | ❌ 关键词搜索 | ✅ | ✅ | ❌ | ✅ 必需 | TDM API，仅支持 DOI 下载 PDF |
 | Scopus | ✅ | ❌ | ❌ | ✅ | ✅ 必需 | 摘要和引文数据库 |
+
+#### DOI 定向获取
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | 基于 DOI 查询和下载 |
 
 说明：
 
 - 能力列中，`✅` 表示直接支持，`❌` 表示不支持，`🟡 条件支持` 表示只在满足条件时可用，例如记录里含 PDF/开放获取链接、只能按 DOI 查询，或只能下载开放获取记录。
 - API Key 列中，`❌` 表示不需要配置，`🟡 可选` 表示不配置也能用但限额或稳定性较弱，`✅ 必需` 表示只在启用该平台时必须配置，不代表新用户默认都要配置。Unpaywall 需要的是 email，不是传统 API key。
 - Wiley TDM API 不支持关键词搜索。应先用 `search_crossref` 找到 Wiley 文章 DOI，再用 `download_paper` 配合 `platform=wiley` 下载。
+- ACM 和 USENIX 检索刻意走元数据后端，不抓取平台搜索页，以遵守 robots.txt 并降低 IP 被封风险。
 - `platform=all` 会尝试所有已注册检索来源，但不包含 Wiley 这类只支持 DOI 下载、不能关键词搜索的平台。未配置 key、超时或请求失败的来源会写入 `failed_sources` / `errors`，其他来源继续返回。
 - `--sources` 接受逗号分隔来源，例如 `--sources crossref,openalex,pmc`。
 - `🟡 可选*` 对 Semantic Scholar 的含义是：普通检索可选；`search_semantic_snippets` 正文片段检索必需配置 `SEMANTIC_SCHOLAR_API_KEY`。
@@ -144,6 +200,7 @@ paper-search diagnostics --pretty
 | 默认推荐 | `CORE_API_KEY` 或 `PAPER_SEARCH_CORE_API_KEY` | 建议配置 | CORE 匿名访问容易限流；配置 key 后更适合开放仓储检索。 |
 | 生物医学高频 | `PUBMED_API_KEY`、`NCBI_EMAIL`、`NCBI_TOOL` | 经常用 PubMed 时建议配置 | 提高 NCBI E-utilities 限额，并让请求带上明确客户端信息。 |
 | 机构权限型 | `WOS_API_KEY` | 有 Web of Science API 权限再配置 | 用于 Web of Science 检索和引文数据；需要 Clarivate API 权限。 |
+| 机构权限型 | `IEEE_API_KEY` | 有 IEEE Xplore API 权限再配置 | 用于 IEEE Xplore 元数据检索；IEEE 可能要求注册 API 访问和产品权限。 |
 | 机构权限型 | `ELSEVIER_API_KEY` | 有 Scopus 或 ScienceDirect API 权限再配置 | 同一个 Elsevier key 不等于自动拥有两个产品权限，Scopus 和 ScienceDirect 需要分别开通。 |
 | 机构权限型 | `SPRINGER_API_KEY`、`SPRINGER_OPENACCESS_API_KEY` | 需要 Springer 平台时再配置 | 用于 Springer 元数据和开放获取记录；401 通常表示 key 无效或产品权限未开通。 |
 | 机构权限型 | `WILEY_TDM_TOKEN` | 有 Wiley TDM/机构全文权限再配置 | 仅支持 DOI 下载；能否下载取决于 token 和机构订阅权限。 |
@@ -174,6 +231,9 @@ cp .env.example .env
 # Web of Science，搜索 Web of Science 时必需
 WOS_API_KEY=your_web_of_science_api_key_here
 WOS_API_VERSION=v1
+
+# IEEE Xplore，IEEE 元数据检索必需
+IEEE_API_KEY=your_ieee_api_key_here
 
 # PubMed，可选；从 3 requests/sec 提升到 10 requests/sec
 PUBMED_API_KEY=your_ncbi_api_key_here
@@ -212,6 +272,7 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 ### API Key 获取入口
 
 - Web of Science: [Clarivate Developer Portal](https://developer.clarivate.com/apis)
+- IEEE Xplore: [IEEE Xplore Metadata API](https://developer.ieee.org/docs/read/Searching_the_IEEE_Xplore_Metadata_API)
 - PubMed: [NCBI API Keys](https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/)
 - Semantic Scholar: [Semantic Scholar API](https://www.semanticscholar.org/product/api)
 - Elsevier: [Elsevier Developer Portal](https://dev.elsevier.com/apikey/manage)
@@ -399,8 +460,9 @@ paper-search run search_papers --json-args '{"query":"machine learning","platfor
 
 ```text
 crossref, arxiv, webofscience, wos, pubmed, biorxiv, medrxiv, semantic,
-iacr, googlescholar, scholar, scihub, sciencedirect, springer, scopus,
-openalex, unpaywall, pmc, europepmc, core, openaire, all
+iacr, googlescholar, scholar, scihub, ieee, sciencedirect, springer,
+springerlink, scopus, openalex, unpaywall, pmc, europepmc, core,
+openaire, dblp, acm, usenix, openreview, all
 ```
 
 多源检索使用 `sources`：
@@ -447,6 +509,24 @@ paper-search run search_openaire --arg query="machine learning" --arg maxResults
 ```
 
 Unpaywall 只支持 DOI，且需要配置 email。CORE 匿名访问可能很快返回空结果或被限流，长期使用建议配置 API key。
+
+### 注册表驱动的平台检索
+
+这些偏元数据检索的工具由平台注册表生成；后续接入新平台时，只需要增加新的 searcher 和平台注册信息：
+
+```bash
+paper-search run search_dblp --arg query="graph neural networks" --arg maxResults=5 --pretty
+paper-search run search_acm --arg query="software testing" --arg maxResults=5 --pretty
+paper-search run search_usenix --arg query="file systems" --arg maxResults=5 --pretty
+paper-search run search_openreview --arg query="large language models" --arg maxResults=5 --pretty
+paper-search run search_springerlink --arg query="machine learning" --arg maxResults=5 --pretty
+```
+
+`search_ieee` 使用同一套通用参数，但需要配置 `IEEE_API_KEY`：
+
+```bash
+paper-search run search_ieee --arg query="wireless networks" --arg maxResults=5 --arg articleTitle="wireless" --pretty
+```
 
 ### `search_webofscience`
 
@@ -550,29 +630,31 @@ paper-search run get_paper_by_doi --arg doi="10.1038/nature12373" --arg platform
 
 ### `download_paper`
 
-从支持的平台下载 PDF。
+从指定平台下载 PDF。如果该平台没有原生下载器，或原生下载失败，会进入与 `download_with_fallback` 相同的下载漏斗。
 
 ```bash
 paper-search run download_paper --arg paperId="2301.00001" --arg platform=arxiv --arg savePath=./downloads --pretty
 ```
 
-支持下载的平台：
+原生下载平台：
 
 ```text
 arxiv, biorxiv, medrxiv, semantic, iacr, scihub, springer, wiley,
 pmc, europepmc, core
 ```
 
+其他已注册来源，例如 `crossref`、`openalex`、`dblp`、`acm`、`usenix`、`openreview`，也可以传给 `download_paper`；它们会直接进入元数据/仓储/Unpaywall/Sci-Hub 回退漏斗。
+
 ### `download_with_fallback`
 
-按开放获取优先顺序尝试下载：
+按完整下载漏斗尝试下载。顺序是原生下载、元数据 PDF URL、仓储发现、Unpaywall DOI 解析，最后默认使用 Sci-Hub 兜底：
 
 ```bash
 paper-search run download_with_fallback --arg source=arxiv --arg paperId=1201.0490 --arg doi=10.48550/arxiv.1201.0490 --arg savePath=./downloads --pretty
-paper-search run download_with_fallback --arg source=crossref --arg paperId="10.1038/nature12373" --arg doi="10.1038/nature12373" --arg savePath=./downloads --arg useSciHub=false --pretty
+paper-search run download_with_fallback --arg source=crossref --arg paperId="10.1038/nature12373" --arg doi="10.1038/nature12373" --arg savePath=./downloads --pretty
 ```
 
-`useSciHub` 默认为 `false`；只有明确选择该最后兜底路径时才设置为 `true`。
+`useSciHub` 默认为 `true`；只有需要关闭该最后兜底路径时才设置为 `false`。`download_paper` 在指定平台下载失败或平台不支持直接下载时，也会进入同一条漏斗。
 
 ### `search_wiley`
 

@@ -27,7 +27,7 @@ export async function downloadWithFallback(searchers, options) {
     const unpaywallResult = await tryUnpaywall(searchers, options.doi || '', savePath, attempts);
     if (unpaywallResult)
         return { status: 'ok', path: unpaywallResult, attempts };
-    if (options.useSciHub) {
+    if (options.useSciHub !== false) {
         const identifier = options.doi || options.title || options.paperId;
         try {
             const path = await searchers.scihub.downloadPdf(identifier, { savePath });
@@ -39,7 +39,7 @@ export async function downloadWithFallback(searchers, options) {
         }
     }
     else {
-        attempts.push({ stage: 'scihub', status: 'skipped', message: 'Sci-Hub fallback disabled; pass useSciHub=true to opt in.' });
+        attempts.push({ stage: 'scihub', status: 'skipped', message: 'Sci-Hub fallback disabled by useSciHub=false.' });
     }
     return { status: 'error', attempts };
 }

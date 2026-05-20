@@ -66,7 +66,10 @@ export const API_ENDPOINTS = {
   PUBMED: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
   BIORXIV: 'https://api.biorxiv.org',
   MEDRXIV: 'https://api.medrxiv.org',
-  WILEY_TDM: 'https://api.wiley.com/onlinelibrary/tdm/v1'
+  WILEY_TDM: 'https://api.wiley.com/onlinelibrary/tdm/v1',
+  DBLP: 'https://dblp.org/search/publ/api',
+  IEEE_XPLORE: 'https://ieeexploreapi.ieee.org/api/v1/search/articles',
+  OPENREVIEW: 'https://api.openreview.net'
 } as const;
 
 /**

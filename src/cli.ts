@@ -29,9 +29,11 @@ import {
   unsetUserConfigValue
 } from './config/ConfigService.js';
 import type { ConfigKey } from './config/ConfigService.js';
+import { setupGlobalProxy } from './utils/HttpClient.js';
 
 dotenv.config();
 loadUserConfigIntoEnv();
+setupGlobalProxy();
 
 type FlagValue = boolean | string | string[];
 

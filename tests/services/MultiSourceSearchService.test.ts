@@ -26,8 +26,14 @@ const searchers = {
   webofscience: {},
   wos: {},
   springer: {},
+  springerlink: {},
   scopus: {},
-  unpaywall: {}
+  unpaywall: {},
+  dblp: {},
+  ieee: {},
+  acm: {},
+  usenix: {},
+  openreview: {}
 } as any;
 
 describe('MultiSourceSearchService', () => {
@@ -58,10 +64,16 @@ describe('MultiSourceSearchService', () => {
         'springer',
         'scopus',
         'scihub',
-        'unpaywall'
+        'unpaywall',
+        'dblp',
+        'ieee',
+        'acm',
+        'usenix',
+        'openreview'
       ]);
       expect(sources).not.toContain('wos');
       expect(sources).not.toContain('scholar');
+      expect(sources).not.toContain('springerlink');
       expect(sources).not.toContain('wiley');
     });
 
@@ -70,6 +82,13 @@ describe('MultiSourceSearchService', () => {
         'crossref',
         'europepmc',
         'pmc'
+      ]);
+    });
+
+    it('normalizes new registry aliases', () => {
+      expect(parseSourceList('springerlink,google_scholar', searchers)).toEqual([
+        'springer',
+        'googlescholar'
       ]);
     });
   });

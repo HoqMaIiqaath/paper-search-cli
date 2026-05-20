@@ -9,7 +9,7 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Platforms](https://img.shields.io/badge/platforms-20-brightgreen.svg)
+![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
 ![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
@@ -27,13 +27,13 @@ Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https
 
 ## Key Features
 
-- **20 academic sources/platforms**: Crossref, OpenAlex, PubMed, PubMed Central, Europe PMC, arXiv, bioRxiv, medRxiv, Semantic Scholar, CORE, OpenAIRE, Web of Science, Google Scholar, IACR ePrint, Sci-Hub, ScienceDirect, Springer Nature, Wiley, Scopus, and Unpaywall.
+- **25 academic sources/platforms**: Crossref, OpenAlex, PubMed, PubMed Central, Europe PMC, arXiv, bioRxiv, medRxiv, Semantic Scholar, CORE, OpenAIRE, DBLP, ACM Digital Library metadata, USENIX metadata, OpenReview, Web of Science, Google Scholar, IACR ePrint, Sci-Hub, IEEE Xplore, ScienceDirect, Springer Nature/SpringerLink, Wiley, Scopus, and Unpaywall.
 - **Single command interface**: install once, then call `paper-search` from terminal, scripts, or agents.
 - **JSON-first output**: stdout is machine-readable JSON by default; stderr is reserved for human-readable diagnostics.
 - **Unified paper model**: normalized title, authors, DOI, source, dates, abstract, PDF URL, citation count, and provider-specific metadata where available.
 - **Multi-source search with dedupe**: query selected sources with `--sources crossref,openalex,pmc`, or use `platform=all` to try every registered search source, then merge duplicates by DOI and title/author keys.
 - **Semantic Scholar body-snippet search**: `search_semantic_snippets` searches Semantic Scholar's Open Access snippet index for body-text snippets, which is useful for finding methodological details. It requires `SEMANTIC_SCHOLAR_API_KEY`.
-- **Open-access-first fallback download**: `download_with_fallback` tries native source download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall DOI resolution, then optional Sci-Hub only when explicitly enabled.
+- **Funnel-style fallback download**: `download_with_fallback` tries native source download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall DOI resolution, then Sci-Hub as the final fallback unless `useSciHub=false`.
 - **Rate limits and retry logic**: platform-specific rate limiting and retryable API error handling.
 - **PDF download support**: download from supported sources such as arXiv, bioRxiv, medRxiv, Semantic Scholar, IACR, Sci-Hub, Springer open access, and Wiley DOI-based access.
 - **Agent-friendly commands**: `tools`, `status`, `search`, `download`, and `run` cover both simple use and precise advanced calls.
@@ -73,34 +73,90 @@ paper-search config doctor --pretty
 
 ## Supported Platforms
 
+### Platform Families
+
+The table below remains the source-of-truth for capabilities. For choosing a source quickly, use these broad families:
+
+| Family | Platforms | Best For |
+| --- | --- | --- |
+| General scholarly metadata | Crossref, OpenAlex, Semantic Scholar, Google Scholar | Broad discovery, DOI metadata, citation clues, first-pass literature search |
+| Medicine / life sciences | PubMed, PubMed Central, Europe PMC | Clinical, biomedical, public health, biomedical metadata, and open full text |
+| Preprints / conference papers | arXiv, bioRxiv, medRxiv, OpenReview, IACR ePrint | Cross-disciplinary preprints, life-science/medical preprints, AI/ML submissions, and cryptography ePrints |
+| Computer science / engineering | DBLP, ACM Digital Library metadata, IEEE Xplore, USENIX | CS bibliography, engineering databases, systems/security proceedings |
+| Open full text / repositories | CORE, OpenAIRE, Unpaywall | Cross-disciplinary repository discovery and open-access PDF fallback routes |
+| Citation indexes / publishers | Web of Science, Scopus, ScienceDirect, Springer Nature/SpringerLink, Wiley | Institution-backed metadata, citation databases, publisher-specific records and downloads |
+| DOI-targeted lookup | Sci-Hub | DOI-based retrieval and the final automatic PDF fallback unless `useSciHub=false` |
+
+Some platforms belong to more than one practical workflow. For example, Semantic Scholar is useful for broad discovery and CS/AI, while arXiv covers CS, math, physics, and quantitative fields. These groups reflect the primary way a platform is used; CS searches often combine "computer science / engineering" with "preprints / conference papers."
+
+### Capability Matrix
+
+#### General Scholarly Metadata
+
 | Platform | Search | Download | Full Text | Citations | API Key | Special Features |
 | --- | --- | --- | --- | --- | --- | --- |
 | Crossref | ✅ | ❌ | ❌ | ✅ | ❌ | Default search platform, broad metadata coverage |
 | OpenAlex | ✅ | 🟡 Conditional | ❌ | ✅ | ❌ | Broad free metadata; can feed fallback downloads when records include OA links |
-| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | Physics, CS, math, and related preprints |
-| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ Required | Citation database, date sorting, year ranges |
+| Semantic Scholar | ✅ | ✅ | ✅ Body snippets | ✅ | 🟡 Optional* | AI semantic search + OA body snippets |
+| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | Broad academic discovery, scrape-based |
+
+#### Medicine / Life Sciences
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
 | PubMed | ✅ | ❌ | ❌ | ❌ | 🟡 Optional | Biomedical literature through NCBI E-utilities |
 | PubMed Central | ✅ | ✅ | ✅ | ❌ | ❌ | Open biomedical full text and PMC PDFs |
 | Europe PMC | ✅ | ✅ | ✅ | ❌ | ❌ | Biomedical metadata plus open full-text links |
-| Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | Broad academic discovery, scrape-based |
+
+#### Computer Science / Engineering
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
+| DBLP | ✅ | ❌ | ❌ | ❌ | ❌ | Computer science bibliography through the official DBLP search API |
+| ACM Digital Library | ✅ | ❌ | ❌ | ✅ | ❌ | ACM DOI-prefix metadata through Crossref; no ACM scraping |
+| USENIX | ✅ | ❌ | ❌ | ❌ | ❌ | DBLP-backed USENIX proceedings metadata; no USENIX search-page scraping |
+| IEEE Xplore | ✅ | ❌ | ❌ | ✅ | ✅ Required | IEEE metadata through the official IEEE Xplore Metadata API |
+
+#### Preprints / Conference Papers
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
+| arXiv | ✅ | ✅ | ✅ | ❌ | ❌ | Physics, CS, math, and related preprints |
 | bioRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | Biology preprints |
 | medRxiv | ✅ | ✅ | ✅ | ❌ | ❌ | Medical preprints |
-| Semantic Scholar | ✅ | ✅ | ✅ Body snippets | ✅ | 🟡 Optional* | AI semantic search + OA body snippets |
+| OpenReview | ✅ | ❌ | ❌ | ❌ | ❌ | Conference submissions, reviews, and preprints through public OpenReview notes search |
+| IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | Cryptography papers |
+
+#### Open Full Text / Repositories
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
 | CORE | ✅ | 🟡 Conditional | 🟡 Conditional | ❌ | 🟡 Optional | Downloads work when records include PDF or full-text links |
 | OpenAIRE | ✅ | 🟡 Conditional | ❌ | ❌ | 🟡 Optional | Can feed fallback downloads when records include open links |
 | Unpaywall | 🟡 Conditional | 🟡 Conditional | ❌ | ❌ | ✅ Required | DOI-only lookup; requires an email; downloads work when an OA PDF is found |
-| IACR ePrint | ✅ | ✅ | ✅ | ❌ | ❌ | Cryptography papers |
-| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | DOI-based paper lookup and PDF retrieval |
+
+#### Citation Indexes / Publishers
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
+| Web of Science | ✅ | ❌ | ❌ | ✅ | ✅ Required | Citation database, date sorting, year ranges |
 | ScienceDirect | ✅ | ❌ | ❌ | ✅ | ✅ Required | Elsevier metadata and abstracts |
-| Springer Nature | ✅ | 🟡 Conditional | ❌ | ❌ | ✅ Required | Open-access records can be downloaded; metadata API requires a key |
+| Springer Nature / SpringerLink | ✅ | 🟡 Conditional | ❌ | ❌ | ✅ Required | `springerlink` is an alias for the existing Springer Nature integration |
 | Wiley | ❌ Keyword search | ✅ | ✅ | ❌ | ✅ Required | TDM API, DOI-based PDF download only |
 | Scopus | ✅ | ❌ | ❌ | ✅ | ✅ Required | Abstract and citation database |
+
+#### DOI-Targeted Lookup
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
+| Sci-Hub | ✅ | ✅ | ❌ | ❌ | ❌ | DOI-based paper lookup and PDF retrieval |
 
 Notes:
 
 - In capability columns, `✅` means directly supported, `❌` means unsupported, and `🟡 Conditional` means support depends on record content or provider constraints, such as DOI-only lookup, available PDF/OA links, or open-access-only downloads.
 - In the API Key column, `❌` means no configuration is needed, `🟡 Optional` means configuration improves limits or stability, and `✅ Required` means the key is required only when you use that platform, not that every new installation should configure it. Unpaywall requires an email rather than a traditional API key.
 - Wiley does not support keyword search through the Wiley TDM API. Use `search_crossref` to find Wiley articles and then use `download_paper` with `platform=wiley` and the DOI.
+- ACM and USENIX search intentionally use metadata-backed routes rather than crawling provider search pages, which keeps the integration compatible with robots.txt and reduces IP-blocking risk.
 - `platform=all` tries every registered search source except DOI-download-only providers such as Wiley. Sources without configured credentials, sources that time out, and sources that fail are recorded in `failed_sources` / `errors` while the remaining sources continue.
 - `--sources` accepts a comma-separated source list, for example `--sources crossref,openalex,pmc`.
 - `🟡 Optional*` for Semantic Scholar means optional for regular search; `search_semantic_snippets` body-snippet search requires `SEMANTIC_SCHOLAR_API_KEY`.
@@ -144,6 +200,7 @@ To reduce first-run friction, if `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMA
 | Default recommended | `CORE_API_KEY` or `PAPER_SEARCH_CORE_API_KEY` | Yes | CORE anonymous access is often rate-limited; a key makes open repository search more reliable. |
 | Biomedical-heavy use | `PUBMED_API_KEY`, `NCBI_EMAIL`, `NCBI_TOOL` | Recommended if you use PubMed heavily | Raises NCBI E-utilities limits and identifies the client. |
 | Institution entitlement | `WOS_API_KEY` | Configure only with Web of Science API access | Enables Web of Science search and citation data; requires Clarivate API entitlement. |
+| Institution entitlement | `IEEE_API_KEY` | Configure only with IEEE Xplore API access | Enables IEEE Xplore metadata search; IEEE may require registered API access and product entitlement. |
 | Institution entitlement | `ELSEVIER_API_KEY` | Configure only with Scopus or ScienceDirect API access | One Elsevier key does not automatically grant both products; Scopus and ScienceDirect need separate entitlements. |
 | Institution entitlement | `SPRINGER_API_KEY`, `SPRINGER_OPENACCESS_API_KEY` | Configure only when you need Springer | Used for Springer metadata and open-access records; 401 usually means an invalid key or missing product access. |
 | Institution entitlement | `WILEY_TDM_TOKEN` | Configure only with Wiley TDM/institutional full-text access | DOI-based download only; availability depends on the token and institutional subscription. |
@@ -174,6 +231,9 @@ cp .env.example .env
 # Web of Science, required for Web of Science search
 WOS_API_KEY=your_web_of_science_api_key_here
 WOS_API_VERSION=v1
+
+# IEEE Xplore, required for IEEE metadata search
+IEEE_API_KEY=your_ieee_api_key_here
 
 # PubMed, optional; increases rate limit from 3 requests/sec to 10 requests/sec
 PUBMED_API_KEY=your_ncbi_api_key_here
@@ -212,6 +272,7 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 ### API Key Sources
 
 - Web of Science: [Clarivate Developer Portal](https://developer.clarivate.com/apis)
+- IEEE Xplore: [IEEE Xplore Metadata API](https://developer.ieee.org/docs/read/Searching_the_IEEE_Xplore_Metadata_API)
 - PubMed: [NCBI API Keys](https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/)
 - Semantic Scholar: [Semantic Scholar API](https://www.semanticscholar.org/product/api)
 - Elsevier: [Elsevier Developer Portal](https://dev.elsevier.com/apikey/manage)
@@ -399,8 +460,9 @@ Supported platforms:
 
 ```text
 crossref, arxiv, webofscience, wos, pubmed, biorxiv, medrxiv, semantic,
-iacr, googlescholar, scholar, scihub, sciencedirect, springer, scopus,
-openalex, unpaywall, pmc, europepmc, core, openaire, all
+iacr, googlescholar, scholar, scihub, ieee, sciencedirect, springer,
+springerlink, scopus, openalex, unpaywall, pmc, europepmc, core,
+openaire, dblp, acm, usenix, openreview, all
 ```
 
 For multi-source search, pass `sources`:
@@ -447,6 +509,24 @@ paper-search run search_openaire --arg query="machine learning" --arg maxResults
 ```
 
 Unpaywall is DOI-only and requires an email. CORE public access may return zero results or rate-limit quickly without an API key.
+
+### Registry-Backed Platform Search
+
+These metadata-oriented tools are generated from the platform registry, so adding later platforms only needs a new searcher plus registry metadata:
+
+```bash
+paper-search run search_dblp --arg query="graph neural networks" --arg maxResults=5 --pretty
+paper-search run search_acm --arg query="software testing" --arg maxResults=5 --pretty
+paper-search run search_usenix --arg query="file systems" --arg maxResults=5 --pretty
+paper-search run search_openreview --arg query="large language models" --arg maxResults=5 --pretty
+paper-search run search_springerlink --arg query="machine learning" --arg maxResults=5 --pretty
+```
+
+`search_ieee` uses the same generic schema but requires `IEEE_API_KEY`:
+
+```bash
+paper-search run search_ieee --arg query="wireless networks" --arg maxResults=5 --arg articleTitle="wireless" --pretty
+```
 
 ### `search_webofscience`
 
@@ -550,29 +630,31 @@ paper-search run get_paper_by_doi --arg doi="10.1038/nature12373" --arg platform
 
 ### `download_paper`
 
-Download PDF files from supported platforms.
+Download PDF files from a platform. If the selected platform has no native downloader, or if native download fails, the command enters the same fallback funnel used by `download_with_fallback`.
 
 ```bash
 paper-search run download_paper --arg paperId="2301.00001" --arg platform=arxiv --arg savePath=./downloads --pretty
 ```
 
-Supported download platforms:
+Native download platforms:
 
 ```text
 arxiv, biorxiv, medrxiv, semantic, iacr, scihub, springer, wiley,
 pmc, europepmc, core
 ```
 
+Other registered sources, such as `crossref`, `openalex`, `dblp`, `acm`, `usenix`, or `openreview`, can still be passed to `download_paper`; they start directly at the metadata/repository/Unpaywall/Sci-Hub fallback funnel.
+
 ### `download_with_fallback`
 
-Try open-access routes before optional last-resort sources:
+Try the full download funnel. The order is source-native download, metadata PDF URL, repository discovery, Unpaywall DOI resolution, then Sci-Hub as the final fallback:
 
 ```bash
 paper-search run download_with_fallback --arg source=arxiv --arg paperId=1201.0490 --arg doi=10.48550/arxiv.1201.0490 --arg savePath=./downloads --pretty
-paper-search run download_with_fallback --arg source=crossref --arg paperId="10.1038/nature12373" --arg doi="10.1038/nature12373" --arg savePath=./downloads --arg useSciHub=false --pretty
+paper-search run download_with_fallback --arg source=crossref --arg paperId="10.1038/nature12373" --arg doi="10.1038/nature12373" --arg savePath=./downloads --pretty
 ```
 
-`useSciHub` defaults to `false`; set it to `true` only when you explicitly choose that final fallback.
+`useSciHub` defaults to `true`; set it to `false` only when you need to suppress that final fallback. `download_paper` also routes failed or unsupported platform downloads through the same funnel.
 
 ### `search_wiley`
 

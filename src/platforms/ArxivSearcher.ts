@@ -577,10 +577,19 @@ export class ArxivSearcher extends PaperSource {
    */
   private async parseSearchResponse(xmlData: string): Promise<Paper[]> {
     try {
-      const parser = new xml2js.Parser();
-      const result: ArxivResponse = await parser.parseStringPromise(xmlData);
+      const trimmed = (xmlData || '').trim();
+      if (!trimmed) {
+        throw new Error('Empty XML response received from arXiv');
+      }
+      if (!trimmed.startsWith('<')) {
+        const preview = trimmed.slice(0, 120).replace(/\s+/g, ' ');
+        throw new Error(`Invalid XML response received (expected markup, got: "${preview}...")`);
+      }
 
-      if (!result.feed.entry) {
+      const parser = new xml2js.Parser();
+      const result: ArxivResponse = await parser.parseStringPromise(trimmed);
+
+      if (!result || !result.feed || !result.feed.entry) {
         return [];
       }
 

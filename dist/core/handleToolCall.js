@@ -5,6 +5,7 @@ import { logDebug } from '../utils/Logger.js';
 import { searchMultipleSources } from '../services/MultiSourceSearchService.js';
 import { downloadWithFallback } from '../services/OpenAccessFallbackService.js';
 import { withTimeout } from '../utils/SecurityUtils.js';
+import { getGenericSearchToolPlatform, getPlatformMetadata, isPlatformAlias, resolvePlatformId } from './platformMetadata.js';
 function jsonTextResponse(text) {
     return {
         content: [
@@ -35,9 +36,24 @@ function normalizeDoi(value) {
 function paperMatchesDoi(paper, doi) {
     return normalizeDoi(paper.doi || '') === normalizeDoi(doi);
 }
+async function handleGenericSearch(platform, args, searchers) {
+    const resolvedPlatform = resolvePlatformId(platform);
+    const searcher = searchers[resolvedPlatform];
+    if (!searcher) {
+        throw new Error(`Unsupported platform: ${platform}`);
+    }
+    const { query, ...searchOptions } = args;
+    const results = await searcher.search(query, searchOptions);
+    const displayName = getPlatformMetadata(platform)?.displayName || platform;
+    return jsonTextResponse(`Found ${results.length} ${displayName} papers.\n\n${JSON.stringify(results.map((paper) => PaperFactory.toDict(paper)), null, 2)}`);
+}
 export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
     const toolName = toolNameRaw;
     const args = parseToolArgs(toolName, rawArgs);
+    const genericSearchPlatform = getGenericSearchToolPlatform(toolNameRaw);
+    if (genericSearchPlatform) {
+        return handleGenericSearch(genericSearchPlatform, args, searchers);
+    }
     switch (toolName) {
         case 'search_papers': {
             const { query, platform, sources, maxResults, year, author, journal, category, days, fetchDetails, fieldsOfStudy, sortBy, sortOrder } = args;
@@ -63,7 +79,8 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
                 return jsonTextResponse(`Found ${result.total} papers across ${result.sources_used.length} source(s).\n\n${JSON.stringify(result, null, 2)}`);
             }
             else {
-                const searcher = searchers[platform];
+                const resolvedPlatform = resolvePlatformId(platform);
+                const searcher = searchers[resolvedPlatform];
                 if (!searcher) {
                     throw new Error(`Unsupported platform: ${platform}`);
                 }
@@ -159,15 +176,41 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
         case 'download_paper': {
             const { paperId, platform, savePath } = args;
             const resolvedSavePath = savePath || './downloads';
-            const searcher = searchers[platform];
+            const resolvedPlatform = resolvePlatformId(platform);
+            const searcher = searchers[resolvedPlatform];
             if (!searcher) {
                 throw new Error(`Unsupported platform for download: ${platform}`);
             }
             if (!searcher.getCapabilities().download) {
-                throw new Error(`Platform ${platform} does not support PDF download`);
+                const result = await downloadWithFallback(searchers, {
+                    source: resolvedPlatform,
+                    paperId,
+                    doi: paperId,
+                    savePath: resolvedSavePath,
+                    useSciHub: true
+                });
+                if (result.status === 'ok') {
+                    return jsonTextResponse(`PDF downloaded successfully via fallback to: ${result.path}\n\n${JSON.stringify(result, null, 2)}`);
+                }
+                return jsonTextResponse(`PDF download failed via fallback.\n\n${JSON.stringify(result, null, 2)}`);
             }
-            const filePath = await searcher.downloadPdf(paperId, { savePath: resolvedSavePath });
-            return jsonTextResponse(`PDF downloaded successfully to: ${filePath}`);
+            try {
+                const filePath = await searcher.downloadPdf(paperId, { savePath: resolvedSavePath });
+                return jsonTextResponse(`PDF downloaded successfully to: ${filePath}`);
+            }
+            catch (error) {
+                const result = await downloadWithFallback(searchers, {
+                    source: resolvedPlatform,
+                    paperId,
+                    doi: paperId,
+                    savePath: resolvedSavePath,
+                    useSciHub: true
+                });
+                if (result.status === 'ok') {
+                    return jsonTextResponse(`Primary download failed; PDF downloaded successfully via fallback to: ${result.path}\n\n${JSON.stringify(result, null, 2)}`);
+                }
+                throw error;
+            }
         }
         case 'download_with_fallback': {
             const result = await downloadWithFallback(searchers, args);
@@ -222,7 +265,7 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
                 }
             }
             else {
-                const searcher = searchers[platform];
+                const searcher = searchers[resolvePlatformId(platform)];
                 if (!searcher) {
                     throw new Error(`Unsupported platform: ${platform}`);
                 }
@@ -391,7 +434,7 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
             const { validate } = args;
             const statusInfo = [];
             for (const [platformName, searcher] of Object.entries(searchers)) {
-                if (platformName === 'wos' || platformName === 'scholar')
+                if (isPlatformAlias(platformName))
                     continue;
                 const capabilities = searcher.getCapabilities();
                 const hasApiKey = searcher.hasApiKey();

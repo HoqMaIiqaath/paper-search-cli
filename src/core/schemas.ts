@@ -277,6 +277,18 @@ export const GetPlatformStatusSchema = z
   })
   .strip();
 
+export const QueryJournalMetricsSchema = z
+  .object({
+    journal: z.string().optional(),
+    journals: z.union([z.string(), z.array(z.string())]).optional(),
+    file: z.string().optional(),
+    includeRaw: z.boolean().optional().default(false)
+  })
+  .strip()
+  .refine(value => Boolean(value.journal || value.journals || value.file), {
+    message: 'Provide journal, journals, or file'
+  });
+
 export type ToolName =
   | string
   | 'search_papers'
@@ -305,7 +317,8 @@ export type ToolName =
   | 'search_europepmc'
   | 'search_core'
   | 'search_openaire'
-  | 'download_with_fallback';
+  | 'download_with_fallback'
+  | 'query_journal_metrics';
 
 export function parseToolArgs(toolName: ToolName, args: unknown): any {
   if (getGenericSearchToolPlatform(String(toolName))) {
@@ -343,6 +356,8 @@ export function parseToolArgs(toolName: ToolName, args: unknown): any {
       return CheckSciHubMirrorsSchema.parse(args);
     case 'get_platform_status':
       return GetPlatformStatusSchema.parse(args ?? {});
+    case 'query_journal_metrics':
+      return QueryJournalMetricsSchema.parse(args ?? {});
     case 'search_sciencedirect':
       return SearchScienceDirectSchema.parse(args);
     case 'search_springer':

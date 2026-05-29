@@ -4,11 +4,13 @@ description: |
   学术文献检索与论文获取调度器，基于 paper-search CLI，而不是 MCP server。
   用于：搜索论文、查找相似研究、做文献综述初筛、验证 PMID/DOI、下载论文 PDF、
   调用 Crossref/OpenAlex/PubMed/PMC/Europe PMC/arXiv/bioRxiv/medRxiv/Semantic Scholar/CORE/OpenAIRE/DBLP/ACM/USENIX/OpenReview/IACR 等来源，
-  以及使用 Semantic Scholar Open Access snippet 索引检索论文正文片段中的方法学细节。
+  使用 Semantic Scholar Open Access snippet 索引检索论文正文片段中的方法学细节，
+  以及通过 EasyScholar 查询期刊影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警和等级指标。
   当用户提到“搜文献”“找论文”“文献检索”“search papers”“find papers”“literature search”
   “查一下有没有相关研究”“帮我找几篇参考文献”“看看别人怎么做的”“下载论文 PDF”
   “验证 PMID”“验证 DOI”“正文片段检索”“snippet search”“Methods 里怎么做的”
-  “方法学细节检索”等任务时使用。
+  “方法学细节检索”“影响因子”“IF”“JCR 分区”“中科院分区”“期刊分区”
+  “期刊等级”“目标期刊指标”“journal metrics”等任务时使用。
   此 skill 只负责指导 agent 调用 paper-search CLI；API key 必须通过 paper-search setup、
   paper-search config、.env 或环境变量配置，绝不要写入 Skill 文件。
 ---
@@ -26,7 +28,7 @@ command -v paper-search
 paper-search status --pretty
 ```
 
-如果涉及 Semantic Scholar 正文片段、CORE、Unpaywall、Web of Science、IEEE Xplore、Scopus、ScienceDirect、Springer/SpringerLink 或 Wiley 等需要 key/邮箱的能力，再运行：
+如果涉及 Semantic Scholar 正文片段、EasyScholar 期刊指标、CORE、Unpaywall、Web of Science、IEEE Xplore、Scopus、ScienceDirect、Springer/SpringerLink 或 Wiley 等需要 key/邮箱的能力，再运行：
 
 ```bash
 paper-search config doctor --pretty
@@ -37,6 +39,7 @@ paper-search config doctor --pretty
 ```bash
 paper-search setup
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_key
+paper-search setup EASYSCHOLAR_KEY
 paper-search config doctor --pretty
 ```
 
@@ -87,6 +90,20 @@ paper-search run get_paper_by_doi --arg doi="10.xxxx/xxxxx" --pretty
 paper-search run search_semantic_scholar --json-args '{"query":"graph neural network medicine","maxResults":5,"year":"2020-2025"}' --pretty
 ```
 
+### 期刊指标查询
+
+当用户询问影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警、北大核心、南大核心、CSCD、A&HCI、CCF、EI 或目标期刊等级时，使用 EasyScholar 原生 CLI 工具，而不是通用论文检索。
+
+```bash
+paper-search journal-metrics "Nature" "BMJ" --pretty
+paper-search journal-metrics --file journals.txt --include-raw --pretty
+paper-search run query_journal_metrics --json-args '{"journals":["Nature"],"includeRaw":true}' --pretty
+```
+
+返回时优先解释标准化的 `core` 字段：`impact_factor`、`impact_factor_5y`、`jcr_quartile`、`ssci_quartile`、`jci`、`cas_base`、`cas_upgraded`、`cas_small`、`cas_top`、`cas_zone`、`esi`、`warning`、`pku`、`cssci`、`cscd`、`ahci`、`ccf`、`ei`、`china_st_core`。如果需要完整字段，使用 `--include-raw` 并检查 `official_all`、`official_select`、`custom_rank`。
+
+EasyScholar 文档要求每秒最多 2 次请求；批量查询时不要并发调用。
+
 ### 下载 PDF
 
 ```bash
@@ -107,6 +124,7 @@ paper-search run download_with_fallback --json-args '{"source":"crossref","paper
 | 计算机文献目录/会议元数据 | `dblp` | `acm`, `usenix`, `openreview`, `ieee` 需要 key |
 | 跨学科广覆盖 | `crossref` | `openalex`, `semantic` |
 | 开放获取全文发现 | `pmc`, `europepmc`, `core`, `openaire`, `unpaywall` | `download_with_fallback` |
+| 期刊影响因子/分区/等级 | `journal-metrics` | `query_journal_metrics` |
 | 密码学 | `iacr` | `arxiv` |
 | 引用统计排序 | `semantic`, `crossref`, `openalex` | `webofscience`, `scopus` 需要 key |
 | 出版商/付费数据库 | `webofscience`, `ieee`, `scopus`, `sciencedirect`, `springer`/`springerlink`, `wiley` | 仅在 key 已配置时使用 |
@@ -190,7 +208,9 @@ paper-search run search_crossref --arg query="full paper title" --arg maxResults
 |---|---|
 | CLI 不存在 | 提示安装 `npm install -g paper-search-cli` |
 | API key 缺失 | 提示运行 `paper-search setup`；不要索要或保存 key |
+| EasyScholar key 缺失 | 提示运行 `paper-search setup EASYSCHOLAR_KEY`；不要让用户在聊天中发送 SecretKey |
 | 429 限流 | 降低 `--max-results`，换平台，或提示配置可选 key |
+| EasyScholar 批量查询 | 控制在每秒最多 2 次请求；优先使用单次 `journal-metrics` 多期刊输入，不要并发 |
 | 0 结果 | 放宽关键词，换英文同义词，换平台，或用 `--sources` 扩展 |
 | 下载失败 | 优先开放获取来源和 `download_with_fallback`，报告失败原因 |
 | 用户要求完整正文 | 先下载 PDF；再交给当前环境可用的 PDF/MinerU 解析流程 |
@@ -200,4 +220,3 @@ paper-search run search_crossref --arg query="full paper title" --arg maxResults
 - 不管理 Zotero、Obsidian 或其他文献库。
 - 不写论文正文，不做语言润色。
 - 不把 API key、token、cookie 写入 Skill、README 或回复。
-- 当前公开 CLI 不提供期刊 IF、JCR 分区或中科院分区查询；遇到这类请求时说明能力边界，除非用户另行指定本地私有工具。

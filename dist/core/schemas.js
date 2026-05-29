@@ -250,6 +250,17 @@ export const GetPlatformStatusSchema = z
     validate: z.boolean().optional().default(false)
 })
     .strip();
+export const QueryJournalMetricsSchema = z
+    .object({
+    journal: z.string().optional(),
+    journals: z.union([z.string(), z.array(z.string())]).optional(),
+    file: z.string().optional(),
+    includeRaw: z.boolean().optional().default(false)
+})
+    .strip()
+    .refine(value => Boolean(value.journal || value.journals || value.file), {
+    message: 'Provide journal, journals, or file'
+});
 export function parseToolArgs(toolName, args) {
     if (getGenericSearchToolPlatform(String(toolName))) {
         return GenericPlatformSearchSchema.parse(args);
@@ -285,6 +296,8 @@ export function parseToolArgs(toolName, args) {
             return CheckSciHubMirrorsSchema.parse(args);
         case 'get_platform_status':
             return GetPlatformStatusSchema.parse(args ?? {});
+        case 'query_journal_metrics':
+            return QueryJournalMetricsSchema.parse(args ?? {});
         case 'search_sciencedirect':
             return SearchScienceDirectSchema.parse(args);
         case 'search_springer':

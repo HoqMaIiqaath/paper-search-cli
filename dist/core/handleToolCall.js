@@ -4,6 +4,7 @@ import { TIMEOUTS } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
 import { searchMultipleSources } from '../services/MultiSourceSearchService.js';
 import { downloadWithFallback } from '../services/OpenAccessFallbackService.js';
+import { queryJournalMetrics } from '../services/JournalMetricsService.js';
 import { withTimeout } from '../utils/SecurityUtils.js';
 import { getGenericSearchToolPlatform, getPlatformMetadata, isPlatformAlias, resolvePlatformId } from './platformMetadata.js';
 function jsonTextResponse(text) {
@@ -27,6 +28,16 @@ const DOI_LOOKUP_SOURCES = [
     'webofscience',
     'arxiv'
 ];
+function parseJournalList(value) {
+    if (!value)
+        return [];
+    if (Array.isArray(value))
+        return value.map(item => String(item));
+    return String(value)
+        .split(/\r?\n|[,;；]/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
 function normalizeDoi(value) {
     return value
         .trim()
@@ -215,6 +226,22 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
         case 'download_with_fallback': {
             const result = await downloadWithFallback(searchers, args);
             return jsonTextResponse(`Download with fallback ${result.status}.\n\n${JSON.stringify(result, null, 2)}`);
+        }
+        case 'query_journal_metrics': {
+            const { readFileSync } = await import('fs');
+            const journals = [
+                ...parseJournalList(args.journal),
+                ...parseJournalList(args.journals),
+                ...(args.file
+                    ? readFileSync(String(args.file), 'utf8')
+                        .split(/\r?\n/)
+                        .map(line => line.trim())
+                        .filter(line => line && !line.startsWith('#'))
+                    : [])
+            ];
+            const rows = await queryJournalMetrics({ journals, includeRaw: args.includeRaw });
+            const found = rows.filter(row => row.status === 'found').length;
+            return jsonTextResponse(`Found journal metrics for ${found}/${rows.length} journal(s).\n\n${JSON.stringify(rows, null, 2)}`);
         }
         case 'search_google_scholar': {
             const { query, maxResults, yearLow, yearHigh, author } = args;

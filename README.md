@@ -2,7 +2,7 @@
 
 [中文](README-sc.md)
 
-Paper Search CLI is a standalone Node.js command line tool for searching, validating, and downloading academic papers from multiple scholarly sources. It is designed for direct terminal use, automation scripts, and agent workflows that need a stable command surface with predictable JSON output.
+Paper Search CLI is a standalone Node.js command line tool for searching, validating, and downloading academic papers from multiple scholarly sources, plus querying journal metrics through EasyScholar. It is designed for direct terminal use, automation scripts, and agent workflows that need a stable command surface with predictable JSON output.
 
 It keeps the broad platform coverage, unified paper model, and detailed capability descriptions of the earlier Paper Search implementation, but runs as a normal CLI process. There is no long-running background service to configure, start, or keep alive.
 
@@ -10,7 +10,7 @@ It keeps the broad platform coverage, unified paper model, and detailed capabili
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https://linux.do) community. The CLI + Skill direction and the paper-search workflow refinements in this project were shaped by LinuxDo discussions and open-source sharing.
@@ -28,6 +28,7 @@ Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https
 ## Key Features
 
 - **25 academic sources/platforms**: Crossref, OpenAlex, PubMed, PubMed Central, Europe PMC, arXiv, bioRxiv, medRxiv, Semantic Scholar, CORE, OpenAIRE, DBLP, ACM Digital Library metadata, USENIX metadata, OpenReview, Web of Science, Google Scholar, IACR ePrint, Sci-Hub, IEEE Xplore, ScienceDirect, Springer Nature/SpringerLink, Wiley, Scopus, and Unpaywall.
+- **EasyScholar journal metrics**: query impact factor, 5-year impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and optional raw official/custom rank fields.
 - **Single command interface**: install once, then call `paper-search` from terminal, scripts, or agents.
 - **JSON-first output**: stdout is machine-readable JSON by default; stderr is reserved for human-readable diagnostics.
 - **Unified paper model**: normalized title, authors, DOI, source, dates, abstract, PDF URL, citation count, and provider-specific metadata where available.
@@ -36,7 +37,7 @@ Thanks to the sincere, friendly, collaborative, and professional [LinuxDo](https
 - **Funnel-style fallback download**: `download_with_fallback` tries native source download, discovered PDF URLs, PMC/Europe PMC/CORE/OpenAIRE, Unpaywall DOI resolution, then Sci-Hub as the final fallback unless `useSciHub=false`.
 - **Rate limits and retry logic**: platform-specific rate limiting and retryable API error handling.
 - **PDF download support**: download from supported sources such as arXiv, bioRxiv, medRxiv, Semantic Scholar, IACR, Sci-Hub, Springer open access, and Wiley DOI-based access.
-- **Agent-friendly commands**: `tools`, `status`, `search`, `download`, and `run` cover both simple use and precise advanced calls.
+- **Agent-friendly commands**: `tools`, `status`, `search`, `journal-metrics`, `download`, and `run` cover both simple use and precise advanced calls.
 
 ## Quick Start
 
@@ -75,11 +76,14 @@ paper-search config doctor --pretty
 
 ### Platform Families
 
-The table below remains the source-of-truth for capabilities. For choosing a source quickly, use these broad families:
+The table below remains the source-of-truth for capabilities. In addition to the 25 paper search/retrieval sources, the CLI also provides EasyScholar journal metrics. EasyScholar does not participate in `platform=all` or `--sources`; call it with `journal-metrics` / `query_journal_metrics`.
+
+For choosing a source or lookup tool quickly, use these broad families:
 
 | Family | Platforms | Best For |
 | --- | --- | --- |
 | General scholarly metadata | Crossref, OpenAlex, Semantic Scholar, Google Scholar | Broad discovery, DOI metadata, citation clues, first-pass literature search |
+| Journal metrics | EasyScholar | Impact factor, 5-year impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and rank data |
 | Medicine / life sciences | PubMed, PubMed Central, Europe PMC | Clinical, biomedical, public health, biomedical metadata, and open full text |
 | Preprints / conference papers | arXiv, bioRxiv, medRxiv, OpenReview, IACR ePrint | Cross-disciplinary preprints, life-science/medical preprints, AI/ML submissions, and cryptography ePrints |
 | Computer science / engineering | DBLP, ACM Digital Library metadata, IEEE Xplore, USENIX | CS bibliography, engineering databases, systems/security proceedings |
@@ -99,6 +103,12 @@ Some platforms belong to more than one practical workflow. For example, Semantic
 | OpenAlex | ✅ | 🟡 Conditional | ❌ | ✅ | ❌ | Broad free metadata; can feed fallback downloads when records include OA links |
 | Semantic Scholar | ✅ | ✅ | ✅ Body snippets | ✅ | 🟡 Optional* | AI semantic search + OA body snippets |
 | Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | Broad academic discovery, scrape-based |
+
+#### Journal Metrics
+
+| Platform | Search | Download | Full Text | Citations | API Key | Special Features |
+| --- | --- | --- | --- | --- | --- | --- |
+| EasyScholar | ✅ Journal lookup | ❌ | ❌ | ❌ | ✅ Required | Impact factor, 5-year impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and optional raw official/custom rank fields |
 
 #### Medicine / Life Sciences
 
@@ -160,6 +170,7 @@ Notes:
 - `platform=all` tries every registered search source except DOI-download-only providers such as Wiley. Sources without configured credentials, sources that time out, and sources that fail are recorded in `failed_sources` / `errors` while the remaining sources continue.
 - `--sources` accepts a comma-separated source list, for example `--sources crossref,openalex,pmc`.
 - `🟡 Optional*` for Semantic Scholar means optional for regular search; `search_semantic_snippets` body-snippet search requires `SEMANTIC_SCHOLAR_API_KEY`.
+- EasyScholar is a journal metrics lookup tool, not a paper search source. Use `paper-search journal-metrics "Nature"` or `paper-search run query_journal_metrics`.
 
 ## Configuration
 
@@ -168,6 +179,7 @@ Most free metadata sources work without configuration. For API keys and emails, 
 ```bash
 paper-search setup
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_here
+paper-search setup EASYSCHOLAR_KEY  # hidden prompt; safer for EasyScholar SecretKey
 paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com  # optional: replace the setup-generated email
 paper-search config list --pretty
 paper-search config doctor --pretty
@@ -182,7 +194,7 @@ The default config path is:
 
 The file is written with `0600` permissions. `config list` and `config doctor` mask secrets.
 
-`paper-search setup` is the guided setup command. By default it asks for the recommended credentials only: Semantic Scholar, Unpaywall email, Crossref email, and CORE. Use `paper-search setup --all` to walk through every supported configuration key, or `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY` to configure a specific subset.
+`paper-search setup` is the guided setup command. By default it asks for the recommended credentials only: Semantic Scholar, Unpaywall email, Crossref email, CORE, and EasyScholar. Use `paper-search setup --all` to walk through every supported configuration key, or `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY` to configure a specific subset.
 
 To reduce first-run friction, if `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMAIL` / `CROSSREF_MAILTO` are not configured, pressing Enter during setup writes a random Gmail-format address such as `paper.search.xxxxxx@gmail.com`, so basic Unpaywall and Crossref requests can run immediately.
 
@@ -198,6 +210,7 @@ To reduce first-run friction, if `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMA
 | Default recommended | `PAPER_SEARCH_UNPAYWALL_EMAIL` or `UNPAYWALL_EMAIL` | Yes | Finds open-access PDFs from DOI records; this only needs an email, not an API key. Press Enter in `setup` to generate a random Gmail-format email, or replace it manually. |
 | Default recommended | `CROSSREF_MAILTO` | Yes | Puts Crossref requests in the polite pool, which is better for long-running or frequent searches. Press Enter in `setup` to reuse the generated email, or replace it manually. |
 | Default recommended | `CORE_API_KEY` or `PAPER_SEARCH_CORE_API_KEY` | Yes | CORE anonymous access is often rate-limited; a key makes open repository search more reliable. |
+| Default recommended | `EASYSCHOLAR_KEY` or `PAPER_SEARCH_EASYSCHOLAR_KEY` | Yes, if you need journal metrics | Enables EasyScholar journal metrics such as impact factor, JCR quartile, CAS zones, JCI, ESI, and warning flags. Use `paper-search setup EASYSCHOLAR_KEY` so the SecretKey is entered through a hidden prompt. |
 | Biomedical-heavy use | `PUBMED_API_KEY`, `NCBI_EMAIL`, `NCBI_TOOL` | Recommended if you use PubMed heavily | Raises NCBI E-utilities limits and identifies the client. |
 | Institution entitlement | `WOS_API_KEY` | Configure only with Web of Science API access | Enables Web of Science search and citation data; requires Clarivate API entitlement. |
 | Institution entitlement | `IEEE_API_KEY` | Configure only with IEEE Xplore API access | Enables IEEE Xplore metadata search; IEEE may require registered API access and product entitlement. |
@@ -243,6 +256,9 @@ NCBI_TOOL=paper-search-cli
 # Semantic Scholar, required for body-snippet search and useful for higher request limits
 SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
 
+# EasyScholar, required for journal metrics such as IF, JCR quartile, and CAS zones
+EASYSCHOLAR_KEY=your_easyscholar_secret_key_here
+
 # Elsevier, required for Scopus and ScienceDirect; each product still needs separate entitlement
 ELSEVIER_API_KEY=your_elsevier_api_key_here
 
@@ -275,6 +291,7 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 - IEEE Xplore: [IEEE Xplore Metadata API](https://developer.ieee.org/docs/read/Searching_the_IEEE_Xplore_Metadata_API)
 - PubMed: [NCBI API Keys](https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/)
 - Semantic Scholar: [Semantic Scholar API](https://www.semanticscholar.org/product/api)
+- EasyScholar: [EasyScholar Open API](https://www.easyscholar.cc/console/user/open)
 - Elsevier: [Elsevier Developer Portal](https://dev.elsevier.com/apikey/manage)
 - Springer Nature: [Springer Nature Developers](https://dev.springernature.com/)
 - Wiley TDM: [Wiley Text and Data Mining](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining)
@@ -381,7 +398,19 @@ paper-search run search_crossref --arg query="machine learning" --arg maxResults
 paper-search run search_papers --json-args '{"query":"machine learning","sources":"crossref,openalex","maxResults":2}' --pretty
 paper-search run search_pubmed --json-args '{"query":"osteoarthritis","maxResults":5,"sortBy":"date"}' --pretty
 paper-search run get_paper_by_doi --arg doi="10.1038/nature12373" --pretty
+paper-search run query_journal_metrics --json-args '{"journals":["Nature","BMJ"],"includeRaw":true}' --pretty
 ```
+
+### `paper-search journal-metrics`
+
+Query journal-level metrics through EasyScholar. Requires `EASYSCHOLAR_KEY` or `PAPER_SEARCH_EASYSCHOLAR_KEY`.
+
+```bash
+paper-search journal-metrics "Nature" "BMJ" --pretty
+paper-search journal-metrics --file journals.txt --include-raw --pretty
+```
+
+Returned normalized fields include `impact_factor`, `impact_factor_5y`, `jcr_quartile`, `ssci_quartile`, `jci`, `cas_base`, `cas_upgraded`, `cas_small`, `cas_top`, `cas_zone`, `esi`, `warning`, `pku`, `cssci`, `cscd`, `ahci`, `ccf`, `ei`, and `china_st_core` when EasyScholar returns them. `--include-raw` also keeps `official_all`, `official_select`, and `custom_rank`.
 
 ### `paper-search tools`
 
@@ -568,6 +597,17 @@ Search Semantic Scholar's Open Access snippet index for body-text snippets that 
 ```bash
 paper-search run search_semantic_snippets --arg query="CMAverse mediation bootstrap confidence interval" --arg limit=5 --arg fieldsOfStudy=Medicine --pretty
 ```
+
+### `query_journal_metrics`
+
+Query EasyScholar journal metrics. This is not a paper search source; it is a journal-level lookup for publication planning, target-journal screening, and submission checks. Requires `EASYSCHOLAR_KEY` or `PAPER_SEARCH_EASYSCHOLAR_KEY`.
+
+```bash
+paper-search run query_journal_metrics --json-args '{"journals":["Nature","BMJ"]}' --pretty
+paper-search run query_journal_metrics --json-args '{"journal":"Journal of Medical Internet Research","includeRaw":true}' --pretty
+```
+
+The normalized `core` object returns only fields present in EasyScholar for that journal, such as impact factor, JCR/SSCI quartiles, CAS zones, JCI, ESI, warning flags, and Chinese/discipline ranking indicators. Add `includeRaw=true` when you need the complete `officialRank.all`, `officialRank.select`, and `customRank` payloads.
 
 ### `search_iacr`
 

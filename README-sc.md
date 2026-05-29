@@ -2,15 +2,13 @@
 
 [English](README.md)
 
-Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学术来源检索论文、核验元数据和下载 PDF。它面向终端直接使用、自动化脚本和 agent 工作流，提供稳定命令入口和可预测的 JSON 输出。
-
-它继承了之前 Paper Search 实现中的平台覆盖、统一数据模型和详细功能说明，但运行方式已经收口为普通 CLI：每次调用执行一次命令，执行完即退出，不需要配置、启动或维护长期后台服务。
+Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学术来源检索论文、核验元数据、EasyScholar 检索影响因子和期刊分区等信息、下载 PDF。它面向终端直接使用、自动化脚本和 agent 工作流，提供稳定命令入口和可预测的 JSON 输出。
 
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platforms](https://img.shields.io/badge/platforms-25-brightgreen.svg)
-![Version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
 感谢真诚、友善、团结、专业的 [LinuxDo](https://linux.do) 社区。本项目的 CLI + Skill 路线和论文检索工作流改进，来自社区交流与开源分享的启发。
@@ -28,15 +26,10 @@ Paper Search CLI 是一个独立的 Node.js 命令行工具，用于跨多个学
 ## 核心特性
 
 - **25 个学术来源/平台**：Crossref、OpenAlex、PubMed、PubMed Central、Europe PMC、arXiv、bioRxiv、medRxiv、Semantic Scholar、CORE、OpenAIRE、DBLP、ACM Digital Library 元数据、USENIX 元数据、OpenReview、Web of Science、Google Scholar、IACR ePrint、Sci-Hub、IEEE Xplore、ScienceDirect、Springer Nature/SpringerLink、Wiley、Scopus、Unpaywall。
-- **单一命令入口**：安装后通过 `paper-search` 调用，适合终端、脚本和 agent。
-- **JSON 优先输出**：stdout 默认输出 JSON，stderr 保留给人类可读日志和错误。
-- **统一论文数据模型**：标准化标题、作者、DOI、来源、日期、摘要、PDF 链接、引用数和平台扩展字段。
-- **多源检索与去重**：用 `--sources crossref,openalex,pmc` 选择来源，或用 `platform=all` 尝试所有已注册检索来源，再按 DOI、标题+作者合并重复结果。
-- **Semantic Scholar 正文片段检索**：`search_semantic_snippets` 用于检索 Semantic Scholar Open Access snippet 索引中的正文片段，适合查找论文中的方法学细节。该功能需要 `SEMANTIC_SCHOLAR_API_KEY`。
-- **漏斗式回退下载链**：`download_with_fallback` 会先尝试原生下载、结果里的 PDF URL、PMC/Europe PMC/CORE/OpenAIRE、Unpaywall DOI 解析，最后默认使用 Sci-Hub 兜底，除非传入 `useSciHub=false`。
-- **限速与重试**：内置平台级限速和可重试 API 错误处理。
+- **EasyScholar 影响因子与期刊分区检索**：检索影响因子、5 年影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警字段，以及可选的官方/自定义原始等级字段等。
 - **PDF 下载支持**：支持 arXiv、bioRxiv、medRxiv、Semantic Scholar、IACR、Sci-Hub、Springer 开放获取、Wiley DOI 下载等路径。
-- **适合 agent 调用**：`tools`、`status`、`search`、`download`、`run` 覆盖简单检索和精确工具调用。
+- **正文片段检索**：用于检索论文正文片段，数据来源于 Semantic Scholar 中，适合查找论文中的方法学细节等。
+- **适合 agent 调用**：`tools`、`status`、`search`、`journal-metrics`、`download`、`run` 覆盖简单检索和精确工具调用。
 
 ## 快速开始
 
@@ -75,11 +68,14 @@ paper-search config doctor --pretty
 
 ### 平台类型
 
-下面的能力表仍然是平台能力的准确信息来源。如果只是快速选择检索来源，可以先按这些类型判断：
+下面的能力表仍然是平台能力的准确信息来源。除 25 个论文检索/获取来源外，CLI 还提供 EasyScholar 影响因子、期刊分区等检索；EasyScholar 不参与 `platform=all` 或 `--sources`，应使用 `journal-metrics` / `query_journal_metrics` 调用。
+
+如果只是快速选择检索来源或查询工具，可以先按这些类型判断：
 
 | 类型 | 平台 | 适合场景 |
 | --- | --- | --- |
 | 综合检索 | Crossref、OpenAlex、Semantic Scholar、Google Scholar | 广覆盖发现、DOI 元数据、引用线索、文献初筛 |
+| 影响因子/期刊分区 | EasyScholar | 影响因子、5 年影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警和等级信息 |
 | 医学/生命科学 | PubMed、PubMed Central、Europe PMC | 临床、生物医学、公卫、生物医学元数据和开放全文 |
 | 预印本/会议稿 | arXiv、bioRxiv、medRxiv、OpenReview、IACR ePrint | 跨学科预印本、生命科学/医学预印本、AI/ML 投稿和密码学 ePrint |
 | 计算机/工程 | DBLP、ACM Digital Library 元数据、IEEE Xplore、USENIX | CS 文献目录、工程数据库、系统/安全会议论文 |
@@ -99,6 +95,12 @@ paper-search config doctor --pretty
 | OpenAlex | ✅ | 🟡 条件支持 | ❌ | ✅ | ❌ | 广泛免费元数据；记录含开放链接时可用于回退下载 |
 | Semantic Scholar | ✅ | ✅ | ✅ 正文片段 | ✅ | 🟡 可选* | AI 语义检索 + OA 正文片段 |
 | Google Scholar | ✅ | ❌ | ❌ | ✅ | ❌ | 广泛学术发现，基于页面解析 |
+
+#### 影响因子与期刊分区
+
+| 平台 | 搜索 | 下载 | 全文 | 被引统计 | API Key | 特色功能 |
+| --- | --- | --- | --- | --- | --- | --- |
+| EasyScholar | ✅ 影响因子/分区检索 | ❌ | ❌ | ❌ | ✅ 必需 | 影响因子、5 年影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警字段，以及可选的官方/自定义原始等级字段 |
 
 #### 医学/生命科学
 
@@ -160,6 +162,7 @@ paper-search config doctor --pretty
 - `platform=all` 会尝试所有已注册检索来源，但不包含 Wiley 这类只支持 DOI 下载、不能关键词搜索的平台。未配置 key、超时或请求失败的来源会写入 `failed_sources` / `errors`，其他来源继续返回。
 - `--sources` 接受逗号分隔来源，例如 `--sources crossref,openalex,pmc`。
 - `🟡 可选*` 对 Semantic Scholar 的含义是：普通检索可选；`search_semantic_snippets` 正文片段检索必需配置 `SEMANTIC_SCHOLAR_API_KEY`。
+- EasyScholar 是影响因子、期刊分区等检索工具，不是论文检索来源；使用 `paper-search journal-metrics "Nature"` 或 `paper-search run query_journal_metrics`。
 
 ## 配置
 
@@ -168,6 +171,7 @@ paper-search config doctor --pretty
 ```bash
 paper-search setup
 paper-search config set SEMANTIC_SCHOLAR_API_KEY your_semantic_scholar_api_key_here
+paper-search setup EASYSCHOLAR_KEY  # 隐藏输入；更适合配置 EasyScholar SecretKey
 paper-search config set PAPER_SEARCH_UNPAYWALL_EMAIL you@example.com  # 可选：手动覆盖 setup 自动生成的邮箱
 paper-search config list --pretty
 paper-search config doctor --pretty
@@ -182,7 +186,7 @@ paper-search diagnostics --pretty
 
 配置文件权限会写成 `0600`。`config list` 和 `config doctor` 会自动脱敏。
 
-`paper-search setup` 是引导式配置命令。默认只询问推荐配置：Semantic Scholar、Unpaywall email、Crossref email 和 CORE。需要遍历所有支持项时使用 `paper-search setup --all`；只想配置指定项时使用 `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY`。
+`paper-search setup` 是引导式配置命令。默认只询问推荐配置：Semantic Scholar、Unpaywall email、Crossref email、CORE 和 EasyScholar。需要遍历所有支持项时使用 `paper-search setup --all`；只想配置指定项时使用 `paper-search setup --keys SEMANTIC_SCHOLAR_API_KEY,CORE_API_KEY`。
 
 为降低首次配置成本，如果 `PAPER_SEARCH_UNPAYWALL_EMAIL` / `UNPAYWALL_EMAIL` / `CROSSREF_MAILTO` 尚未配置，setup 时直接回车会自动写入一个随机前缀的 Gmail 格式邮箱，例如 `paper.search.xxxxxx@gmail.com`，用于让 Unpaywall 和 Crossref 的基础请求能直接运行。
 
@@ -198,6 +202,7 @@ paper-search diagnostics --pretty
 | 默认推荐 | `PAPER_SEARCH_UNPAYWALL_EMAIL` 或 `UNPAYWALL_EMAIL` | 建议配置 | 用 DOI 查找开放获取 PDF；只需要邮箱，不需要申请 API key。`setup` 直接回车会自动生成随机 Gmail 格式邮箱，也可以手动换成自己的邮箱。 |
 | 默认推荐 | `CROSSREF_MAILTO` | 建议配置 | 让 Crossref 请求进入 polite pool，适合长期或高频检索。`setup` 直接回车会复用自动生成的邮箱，也可以手动换成自己的邮箱。 |
 | 默认推荐 | `CORE_API_KEY` 或 `PAPER_SEARCH_CORE_API_KEY` | 建议配置 | CORE 匿名访问容易限流；配置 key 后更适合开放仓储检索。 |
+| 默认推荐 | `EASYSCHOLAR_KEY` 或 `PAPER_SEARCH_EASYSCHOLAR_KEY` | 需要检索影响因子、期刊分区等时建议配置 | 开启 EasyScholar 检索影响因子、JCR 分区、中科院分区、JCI、ESI 和预警字段等能力。建议用 `paper-search setup EASYSCHOLAR_KEY` 通过隐藏输入配置 SecretKey。 |
 | 生物医学高频 | `PUBMED_API_KEY`、`NCBI_EMAIL`、`NCBI_TOOL` | 经常用 PubMed 时建议配置 | 提高 NCBI E-utilities 限额，并让请求带上明确客户端信息。 |
 | 机构权限型 | `WOS_API_KEY` | 有 Web of Science API 权限再配置 | 用于 Web of Science 检索和引文数据；需要 Clarivate API 权限。 |
 | 机构权限型 | `IEEE_API_KEY` | 有 IEEE Xplore API 权限再配置 | 用于 IEEE Xplore 元数据检索；IEEE 可能要求注册 API 访问和产品权限。 |
@@ -243,6 +248,9 @@ NCBI_TOOL=paper-search-cli
 # Semantic Scholar，正文片段检索必需，也可提升请求限额
 SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
 
+# EasyScholar，检索影响因子、JCR 分区和中科院分区等信息时必需
+EASYSCHOLAR_KEY=your_easyscholar_secret_key_here
+
 # Elsevier，Scopus 和 ScienceDirect 必需；两个产品仍需要分别开通权限
 ELSEVIER_API_KEY=your_elsevier_api_key_here
 
@@ -275,6 +283,7 @@ OPENAIRE_API_KEY=your_openaire_api_key_here
 - IEEE Xplore: [IEEE Xplore Metadata API](https://developer.ieee.org/docs/read/Searching_the_IEEE_Xplore_Metadata_API)
 - PubMed: [NCBI API Keys](https://ncbiinsights.ncbi.nlm.nih.gov/2017/11/02/new-api-keys-for-the-e-utilities/)
 - Semantic Scholar: [Semantic Scholar API](https://www.semanticscholar.org/product/api)
+- EasyScholar: [EasyScholar Open API](https://www.easyscholar.cc/console/user/open)
 - Elsevier: [Elsevier Developer Portal](https://dev.elsevier.com/apikey/manage)
 - Springer Nature: [Springer Nature Developers](https://dev.springernature.com/)
 - Wiley TDM: [Wiley Text and Data Mining](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining)
@@ -381,7 +390,19 @@ paper-search run search_crossref --arg query="machine learning" --arg maxResults
 paper-search run search_papers --json-args '{"query":"machine learning","sources":"crossref,openalex","maxResults":2}' --pretty
 paper-search run search_pubmed --json-args '{"query":"osteoarthritis","maxResults":5,"sortBy":"date"}' --pretty
 paper-search run get_paper_by_doi --arg doi="10.1038/nature12373" --pretty
+paper-search run query_journal_metrics --json-args '{"journals":["Nature","BMJ"],"includeRaw":true}' --pretty
 ```
+
+### `paper-search journal-metrics`
+
+通过 EasyScholar 检索影响因子、期刊分区等信息。需要配置 `EASYSCHOLAR_KEY` 或 `PAPER_SEARCH_EASYSCHOLAR_KEY`。
+
+```bash
+paper-search journal-metrics "Nature" "BMJ" --pretty
+paper-search journal-metrics --file journals.txt --include-raw --pretty
+```
+
+标准化返回字段包括 `impact_factor`、`impact_factor_5y`、`jcr_quartile`、`ssci_quartile`、`jci`、`cas_base`、`cas_upgraded`、`cas_small`、`cas_top`、`cas_zone`、`esi`、`warning`、`pku`、`cssci`、`cscd`、`ahci`、`ccf`、`ei` 和 `china_st_core`，具体以 EasyScholar 对该期刊实际返回字段为准。加 `--include-raw` 会额外保留 `official_all`、`official_select` 和 `custom_rank`。
 
 ### `paper-search tools`
 
@@ -568,6 +589,17 @@ paper-search run search_semantic_scholar --json-args '{"query":"graph neural net
 ```bash
 paper-search run search_semantic_snippets --arg query="CMAverse mediation bootstrap confidence interval" --arg limit=5 --arg fieldsOfStudy=Medicine --pretty
 ```
+
+### `query_journal_metrics`
+
+检索 EasyScholar 影响因子、期刊分区等信息。它不是论文检索来源，而是影响因子与期刊分区检索工具，适合投稿规划、目标期刊筛选和投稿前检查。需要配置 `EASYSCHOLAR_KEY` 或 `PAPER_SEARCH_EASYSCHOLAR_KEY`。
+
+```bash
+paper-search run query_journal_metrics --json-args '{"journals":["Nature","BMJ"]}' --pretty
+paper-search run query_journal_metrics --json-args '{"journal":"Journal of Medical Internet Research","includeRaw":true}' --pretty
+```
+
+标准化的 `core` 对象只返回 EasyScholar 对该期刊实际存在的字段，例如影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警字段和中文/学科等级信息。需要完整官方和自定义等级数据时，使用 `includeRaw=true` 保留 `officialRank.all`、`officialRank.select` 和 `customRank`。
 
 ### `search_iacr`
 

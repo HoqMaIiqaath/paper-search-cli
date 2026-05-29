@@ -218,6 +218,25 @@ export const API_REQUIREMENTS = [
             'Set `CROSSREF_MAILTO` to a real email for polite-pool usage.',
             'Use OpenAlex or Semantic Scholar to enrich incomplete Crossref results.'
         ]
+    },
+    {
+        id: 'easyscholar',
+        platform: 'easyscholar',
+        capability: 'EasyScholar journal metrics: impact factor, JCR quartile, CAS zones, JCI, ESI, and rank datasets',
+        tools: ['query_journal_metrics'],
+        keyGroups: [['EASYSCHOLAR_KEY', 'PAPER_SEARCH_EASYSCHOLAR_KEY']],
+        commonFailures: [
+            'EasyScholar SecretKey is missing or invalid',
+            'The journal name is ambiguous or not indexed by EasyScholar',
+            'EasyScholar omits fields that have no result for a given journal',
+            'Requests exceed the documented rate limit'
+        ],
+        actions: [
+            'Run `paper-search setup EASYSCHOLAR_KEY` to configure the SecretKey without exposing it in shell history.',
+            'Try `paper-search journal-metrics "Nature" --pretty` as a minimal test.',
+            'Use the exact journal title from a verified paper record when a common abbreviation returns no result.',
+            'Keep requests at or below 2 requests per second.'
+        ]
     }
 ];
 const DIRECT_TOOL_PLATFORM = {
@@ -231,6 +250,7 @@ const DIRECT_TOOL_PLATFORM = {
     search_springerlink: 'springerlink',
     search_scopus: 'scopus',
     search_wiley: 'wiley',
+    query_journal_metrics: 'easyscholar',
     search_crossref: 'crossref',
     search_core: 'core',
     search_openaire: 'openaire'

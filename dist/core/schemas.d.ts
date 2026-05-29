@@ -483,6 +483,32 @@ export declare const GetPlatformStatusSchema: z.ZodObject<{
 }, {
     validate?: boolean | undefined;
 }>;
-export type ToolName = string | 'search_papers' | 'search_arxiv' | 'search_webofscience' | 'search_pubmed' | 'search_biorxiv' | 'search_medrxiv' | 'search_semantic_scholar' | 'search_semantic_snippets' | 'search_iacr' | 'download_paper' | 'search_google_scholar' | 'get_paper_by_doi' | 'search_scihub' | 'check_scihub_mirrors' | 'get_platform_status' | 'search_sciencedirect' | 'search_springer' | 'search_wiley' | 'search_scopus' | 'search_crossref' | 'search_openalex' | 'search_unpaywall' | 'search_pmc' | 'search_europepmc' | 'search_core' | 'search_openaire' | 'download_with_fallback';
+export declare const QueryJournalMetricsSchema: z.ZodEffects<z.ZodObject<{
+    journal: z.ZodOptional<z.ZodString>;
+    journals: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
+    file: z.ZodOptional<z.ZodString>;
+    includeRaw: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
+}, "strip", z.ZodTypeAny, {
+    includeRaw: boolean;
+    journal?: string | undefined;
+    journals?: string | string[] | undefined;
+    file?: string | undefined;
+}, {
+    journal?: string | undefined;
+    journals?: string | string[] | undefined;
+    file?: string | undefined;
+    includeRaw?: boolean | undefined;
+}>, {
+    includeRaw: boolean;
+    journal?: string | undefined;
+    journals?: string | string[] | undefined;
+    file?: string | undefined;
+}, {
+    journal?: string | undefined;
+    journals?: string | string[] | undefined;
+    file?: string | undefined;
+    includeRaw?: boolean | undefined;
+}>;
+export type ToolName = string | 'search_papers' | 'search_arxiv' | 'search_webofscience' | 'search_pubmed' | 'search_biorxiv' | 'search_medrxiv' | 'search_semantic_scholar' | 'search_semantic_snippets' | 'search_iacr' | 'download_paper' | 'search_google_scholar' | 'get_paper_by_doi' | 'search_scihub' | 'check_scihub_mirrors' | 'get_platform_status' | 'search_sciencedirect' | 'search_springer' | 'search_wiley' | 'search_scopus' | 'search_crossref' | 'search_openalex' | 'search_unpaywall' | 'search_pmc' | 'search_europepmc' | 'search_core' | 'search_openaire' | 'download_with_fallback' | 'query_journal_metrics';
 export declare function parseToolArgs(toolName: ToolName, args: unknown): any;
 //# sourceMappingURL=schemas.d.ts.map

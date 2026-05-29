@@ -67,6 +67,7 @@ function usage(): string {
 Usage:
   paper-search search <query> [--platform crossref] [--max-results 10] [--year 2024]
   paper-search search <query> [--sources crossref,openalex,pmc] [--max-results 10]
+  paper-search journal-metrics <journal...> [--include-raw]
   paper-search run <tool-name> --json-args '{"query":"machine learning","maxResults":5}'
   paper-search status [--validate]
   paper-search tools
@@ -84,6 +85,7 @@ Global flags:
 Examples:
   paper-search search "large language model evaluation" --platform crossref --max-results 5 --pretty
   paper-search search "machine learning" --sources crossref,openalex --max-results 2 --pretty
+  paper-search journal-metrics "Nature" "BMJ" --pretty
   paper-search setup
   paper-search config set SEMANTIC_SCHOLAR_API_KEY sk_xxx
   paper-search run search_pubmed --arg query="osteoarthritis occupational exposure" --arg maxResults=3
@@ -379,6 +381,23 @@ async function run(parsed: ParsedCli): Promise<unknown> {
     );
   }
 
+  if (command === 'journal-metrics' || command === 'metrics') {
+    const journals = typeof flags.journals === 'string' ? flags.journals : positionals.join('\n').trim();
+    const file = typeof flags.file === 'string' ? flags.file : undefined;
+    if (!journals && !file) {
+      throw new CliError('Missing journal name or --file', 'MISSING_JOURNAL');
+    }
+    return callTool(
+      'query_journal_metrics',
+      {
+        ...flagsToArgs(flags),
+        journals,
+        file
+      },
+      flags
+    );
+  }
+
   if (command === 'run') {
     const tool = positionals[0];
     if (!tool) throw new CliError('Missing tool name', 'MISSING_TOOL');
@@ -513,6 +532,11 @@ const DEFAULT_SETUP_PROMPTS: SetupPrompt[] = [
   {
     key: 'PAPER_SEARCH_CORE_API_KEY',
     label: 'CORE API key, optional but recommended for stable CORE access',
+    secret: true
+  },
+  {
+    key: 'EASYSCHOLAR_KEY',
+    label: 'EasyScholar SecretKey, required for journal metrics (IF/JCR/CAS)',
     secret: true
   }
 ];

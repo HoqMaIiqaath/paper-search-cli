@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { handleToolCall } from '../../src/core/handleToolCall.js';
+import { handleToolCall, TOOL_HANDLER_NAMES } from '../../src/core/handleToolCall.js';
+import { getGenericSearchToolPlatform } from '../../src/core/platformMetadata.js';
+import { TOOLS } from '../../src/core/tools.js';
 import { PaperFactory } from '../../src/models/Paper.js';
 import CitationService from '../../src/services/CitationService.js';
 
@@ -12,6 +14,24 @@ function responseData(response: any): any {
 describe('handleToolCall', () => {
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  describe('tool routing', () => {
+    it('keeps every non-generic tool wired to the explicit handler map', () => {
+      const nonGenericToolNames = TOOLS
+        .map(tool => tool.name)
+        .filter(toolName => !getGenericSearchToolPlatform(toolName))
+        .sort();
+
+      expect(TOOL_HANDLER_NAMES).toEqual(nonGenericToolNames);
+    });
+
+    it('keeps generic registry tools outside the explicit handler map', () => {
+      expect(getGenericSearchToolPlatform('search_dblp')).toBe('dblp');
+      expect(getGenericSearchToolPlatform('search_springerlink')).toBe('springerlink');
+      expect(TOOL_HANDLER_NAMES).not.toContain('search_dblp');
+      expect(TOOL_HANDLER_NAMES).not.toContain('search_springerlink');
+    });
   });
 
   describe('download_paper fallback', () => {

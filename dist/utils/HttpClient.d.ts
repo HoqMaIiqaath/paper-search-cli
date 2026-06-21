@@ -1,6 +1,2 @@
-/**
- * Initializes global HTTP/HTTPS and SOCKS proxy agents for Axios
- * based on standard proxy environment variables.
- */
-export declare function setupGlobalProxy(): void;
+export * from '../infrastructure/http/HttpClient.js';
 //# sourceMappingURL=HttpClient.d.ts.map

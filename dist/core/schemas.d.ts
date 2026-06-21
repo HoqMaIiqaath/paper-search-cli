@@ -1,75 +1,14 @@
 import { z } from 'zod';
-export declare const SearchPapersSchema: z.ZodEffects<z.ZodObject<{
-    query: z.ZodString;
-    platform: z.ZodDefault<z.ZodOptional<z.ZodUnion<[z.ZodEffects<z.ZodString, string, string>, z.ZodLiteral<"all">]>>>;
-    sources: z.ZodOptional<z.ZodString>;
-    maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
-    year: z.ZodOptional<z.ZodString>;
-    author: z.ZodOptional<z.ZodString>;
-    journal: z.ZodOptional<z.ZodString>;
-    category: z.ZodOptional<z.ZodString>;
-    days: z.ZodOptional<z.ZodNumber>;
-    fetchDetails: z.ZodOptional<z.ZodBoolean>;
-    fieldsOfStudy: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
-    sortBy: z.ZodDefault<z.ZodOptional<z.ZodEnum<["relevance", "date", "citations"]>>>;
-    sortOrder: z.ZodDefault<z.ZodOptional<z.ZodEnum<["asc", "desc"]>>>;
-}, "strip", z.ZodTypeAny, {
-    maxResults: number;
-    sortBy: "relevance" | "date" | "citations";
-    sortOrder: "asc" | "desc";
-    query: string;
-    platform: string;
-    journal?: string | undefined;
-    year?: string | undefined;
-    author?: string | undefined;
-    category?: string | undefined;
-    days?: number | undefined;
-    fetchDetails?: boolean | undefined;
-    fieldsOfStudy?: string[] | undefined;
-    sources?: string | undefined;
-}, {
-    query: string;
-    journal?: string | undefined;
-    year?: string | undefined;
-    maxResults?: number | undefined;
-    author?: string | undefined;
-    category?: string | undefined;
-    sortBy?: "relevance" | "date" | "citations" | undefined;
-    sortOrder?: "asc" | "desc" | undefined;
-    days?: number | undefined;
-    fetchDetails?: boolean | undefined;
-    fieldsOfStudy?: string[] | undefined;
-    platform?: string | undefined;
-    sources?: string | undefined;
-}>, {
-    maxResults: number;
-    sortBy: "relevance" | "date" | "citations";
-    sortOrder: "asc" | "desc";
-    query: string;
-    platform: string;
-    journal?: string | undefined;
-    year?: string | undefined;
-    author?: string | undefined;
-    category?: string | undefined;
-    days?: number | undefined;
-    fetchDetails?: boolean | undefined;
-    fieldsOfStudy?: string[] | undefined;
-    sources?: string | undefined;
-}, {
-    query: string;
-    journal?: string | undefined;
-    year?: string | undefined;
-    maxResults?: number | undefined;
-    author?: string | undefined;
-    category?: string | undefined;
-    sortBy?: "relevance" | "date" | "citations" | undefined;
-    sortOrder?: "asc" | "desc" | undefined;
-    days?: number | undefined;
-    fetchDetails?: boolean | undefined;
-    fieldsOfStudy?: string[] | undefined;
-    platform?: string | undefined;
-    sources?: string | undefined;
-}>;
+import { SearchSemanticSnippetsSchema } from '../capabilities/body-snippet-search/schemas.js';
+import { CitationLookupSchema } from '../capabilities/citation-expansion/schemas.js';
+import { GetPaperByDoiSchema, SearchPapersSchema } from '../capabilities/metadata-search/schemas.js';
+import { QueryJournalMetricsSchema } from '../capabilities/journal-metrics/schemas.js';
+import { DownloadPaperSchema, DownloadWithFallbackSchema } from '../capabilities/pdf-discovery/schemas.js';
+export { CitationLookupSchema };
+export { DownloadPaperSchema, DownloadWithFallbackSchema };
+export { GetPaperByDoiSchema, SearchPapersSchema };
+export { QueryJournalMetricsSchema };
+export { SearchSemanticSnippetsSchema };
 export declare const SearchArxivSchema: z.ZodObject<{
     query: z.ZodString;
     maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -193,66 +132,6 @@ export declare const SearchSemanticScholarSchema: z.ZodObject<{
     maxResults?: number | undefined;
     fieldsOfStudy?: string[] | undefined;
 }>;
-export declare const SearchSemanticSnippetsSchema: z.ZodObject<{
-    query: z.ZodString;
-    limit: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
-    year: z.ZodOptional<z.ZodString>;
-    fieldsOfStudy: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-    paperIds: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-    authors: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-    venue: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-    minCitationCount: z.ZodOptional<z.ZodNumber>;
-    publicationDateOrYear: z.ZodOptional<z.ZodString>;
-    fields: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-}, "strip", z.ZodTypeAny, {
-    query: string;
-    limit: number;
-    authors?: string | string[] | undefined;
-    year?: string | undefined;
-    venue?: string | string[] | undefined;
-    fieldsOfStudy?: string | string[] | undefined;
-    fields?: string | string[] | undefined;
-    paperIds?: string | string[] | undefined;
-    minCitationCount?: number | undefined;
-    publicationDateOrYear?: string | undefined;
-}, {
-    query: string;
-    authors?: string | string[] | undefined;
-    year?: string | undefined;
-    venue?: string | string[] | undefined;
-    fieldsOfStudy?: string | string[] | undefined;
-    limit?: number | undefined;
-    fields?: string | string[] | undefined;
-    paperIds?: string | string[] | undefined;
-    minCitationCount?: number | undefined;
-    publicationDateOrYear?: string | undefined;
-}>;
-export declare const CitationLookupSchema: z.ZodEffects<z.ZodObject<{
-    paperId: z.ZodOptional<z.ZodString>;
-    doi: z.ZodOptional<z.ZodString>;
-    arxivId: z.ZodOptional<z.ZodString>;
-    limit: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
-}, "strip", z.ZodTypeAny, {
-    limit: number;
-    paperId?: string | undefined;
-    doi?: string | undefined;
-    arxivId?: string | undefined;
-}, {
-    paperId?: string | undefined;
-    doi?: string | undefined;
-    limit?: number | undefined;
-    arxivId?: string | undefined;
-}>, {
-    limit: number;
-    paperId?: string | undefined;
-    doi?: string | undefined;
-    arxivId?: string | undefined;
-}, {
-    paperId?: string | undefined;
-    doi?: string | undefined;
-    limit?: number | undefined;
-    arxivId?: string | undefined;
-}>;
 export declare const SearchIACRSchema: z.ZodObject<{
     query: z.ZodString;
     maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -265,19 +144,6 @@ export declare const SearchIACRSchema: z.ZodObject<{
     query: string;
     maxResults?: number | undefined;
     fetchDetails?: boolean | undefined;
-}>;
-export declare const DownloadPaperSchema: z.ZodObject<{
-    paperId: z.ZodString;
-    platform: z.ZodEffects<z.ZodString, string, string>;
-    savePath: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    paperId: string;
-    platform: string;
-    savePath?: string | undefined;
-}, {
-    paperId: string;
-    platform: string;
-    savePath?: string | undefined;
 }>;
 export declare const SearchGoogleScholarSchema: z.ZodObject<{
     query: z.ZodString;
@@ -297,16 +163,6 @@ export declare const SearchGoogleScholarSchema: z.ZodObject<{
     author?: string | undefined;
     yearLow?: number | undefined;
     yearHigh?: number | undefined;
-}>;
-export declare const GetPaperByDoiSchema: z.ZodObject<{
-    doi: z.ZodString;
-    platform: z.ZodDefault<z.ZodOptional<z.ZodEnum<["arxiv", "webofscience", "pubmed", "crossref", "openalex", "unpaywall", "pmc", "europepmc", "core", "all"]>>>;
-}, "strip", z.ZodTypeAny, {
-    doi: string;
-    platform: "crossref" | "openalex" | "pubmed" | "pmc" | "europepmc" | "arxiv" | "core" | "webofscience" | "unpaywall" | "all";
-}, {
-    doi: string;
-    platform?: "crossref" | "openalex" | "pubmed" | "pmc" | "europepmc" | "arxiv" | "core" | "webofscience" | "unpaywall" | "all" | undefined;
 }>;
 export declare const SearchSciHubSchema: z.ZodObject<{
     doiOrUrl: z.ZodString;
@@ -529,60 +385,12 @@ export declare const GenericPlatformSearchSchema: z.ZodObject<{
     articleTitle?: string | undefined;
     startRecord?: number | undefined;
 }>;
-export declare const DownloadWithFallbackSchema: z.ZodObject<{
-    source: z.ZodString;
-    paperId: z.ZodString;
-    doi: z.ZodDefault<z.ZodOptional<z.ZodString>>;
-    title: z.ZodDefault<z.ZodOptional<z.ZodString>>;
-    savePath: z.ZodOptional<z.ZodString>;
-    useSciHub: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
-}, "strip", z.ZodTypeAny, {
-    paperId: string;
-    title: string;
-    source: string;
-    doi: string;
-    useSciHub: boolean;
-    savePath?: string | undefined;
-}, {
-    paperId: string;
-    source: string;
-    title?: string | undefined;
-    doi?: string | undefined;
-    savePath?: string | undefined;
-    useSciHub?: boolean | undefined;
-}>;
 export declare const GetPlatformStatusSchema: z.ZodObject<{
     validate: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
     validate: boolean;
 }, {
     validate?: boolean | undefined;
-}>;
-export declare const QueryJournalMetricsSchema: z.ZodEffects<z.ZodObject<{
-    journal: z.ZodOptional<z.ZodString>;
-    journals: z.ZodOptional<z.ZodUnion<[z.ZodString, z.ZodArray<z.ZodString, "many">]>>;
-    file: z.ZodOptional<z.ZodString>;
-    includeRaw: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
-}, "strip", z.ZodTypeAny, {
-    includeRaw: boolean;
-    journal?: string | undefined;
-    journals?: string | string[] | undefined;
-    file?: string | undefined;
-}, {
-    journal?: string | undefined;
-    journals?: string | string[] | undefined;
-    file?: string | undefined;
-    includeRaw?: boolean | undefined;
-}>, {
-    includeRaw: boolean;
-    journal?: string | undefined;
-    journals?: string | string[] | undefined;
-    file?: string | undefined;
-}, {
-    journal?: string | undefined;
-    journals?: string | string[] | undefined;
-    file?: string | undefined;
-    includeRaw?: boolean | undefined;
 }>;
 export type ToolName = string | 'search_papers' | 'search_arxiv' | 'search_webofscience' | 'search_pubmed' | 'search_biorxiv' | 'search_medrxiv' | 'search_semantic_scholar' | 'search_semantic_snippets' | 'get_paper_citations' | 'get_paper_references' | 'search_iacr' | 'download_paper' | 'search_google_scholar' | 'get_paper_by_doi' | 'search_scihub' | 'check_scihub_mirrors' | 'get_platform_status' | 'search_sciencedirect' | 'search_springer' | 'search_wiley' | 'search_scopus' | 'search_crossref' | 'search_openalex' | 'search_unpaywall' | 'search_pmc' | 'search_europepmc' | 'search_core' | 'search_openaire' | 'download_with_fallback' | 'query_journal_metrics';
 export declare function parseToolArgs(toolName: ToolName, args: unknown): any;

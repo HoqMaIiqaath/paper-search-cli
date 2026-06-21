@@ -1,4 +1,18 @@
-import { PLATFORM_METADATA, SEARCH_PLATFORM_VALUES } from './platformMetadata.js';
+import { SEARCH_PLATFORM_VALUES, getGenericPlatformToolDescriptors } from './platformMetadata.js';
+import { SEARCH_SEMANTIC_SNIPPETS_TOOL } from '../capabilities/body-snippet-search/tools.js';
+import {
+  GET_PAPER_CITATIONS_TOOL,
+  GET_PAPER_REFERENCES_TOOL
+} from '../capabilities/citation-expansion/tools.js';
+import { QUERY_JOURNAL_METRICS_TOOL } from '../capabilities/journal-metrics/tools.js';
+import {
+  DOWNLOAD_PAPER_TOOL,
+  DOWNLOAD_WITH_FALLBACK_TOOL
+} from '../capabilities/pdf-discovery/tools.js';
+import {
+  GET_PAPER_BY_DOI_TOOL,
+  SEARCH_PAPERS_TOOL
+} from '../capabilities/metadata-search/tools.js';
 
 export interface CliTool {
   name: string;
@@ -7,61 +21,7 @@ export interface CliTool {
 }
 
 const BASE_TOOLS: CliTool[] = [
-  {
-    name: 'search_papers',
-    description: 'Search academic papers from multiple sources including arXiv, Web of Science, etc.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Search query string' },
-        platform: {
-          type: 'string',
-          enum: [...SEARCH_PLATFORM_VALUES, 'all'],
-          description:
-            'Platform to search (default: crossref). Use --sources for comma-separated multi-source search. Note: Wiley only supports PDF download by DOI.'
-        },
-        sources: {
-          type: 'string',
-          description:
-            'Comma-separated source list for multi-source search, or all for every registered search source except DOI-download-only providers. Failed or unconfigured sources are reported in failed_sources/errors. Example: crossref,openalex,pubmed,pmc'
-        },
-        maxResults: {
-          type: 'number',
-          minimum: 1,
-          maximum: 100,
-          description: 'Maximum number of results to return'
-        },
-        year: { type: 'string', description: 'Year filter (e.g., "2023", "2020-2023", "2020-")' },
-        author: { type: 'string', description: 'Author name filter' },
-        journal: { type: 'string', description: 'Journal name filter' },
-        category: { type: 'string', description: 'Category filter (e.g., cs.AI for arXiv)' },
-        days: {
-          type: 'number',
-          description: 'Number of days to search back (bioRxiv/medRxiv only)'
-        },
-        fetchDetails: {
-          type: 'boolean',
-          description: 'Fetch detailed information (IACR only)'
-        },
-        fieldsOfStudy: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Fields of study filter (Semantic Scholar only)'
-        },
-        sortBy: {
-          type: 'string',
-          enum: ['relevance', 'date', 'citations'],
-          description: 'Sort results by relevance, date, or citations'
-        },
-        sortOrder: {
-          type: 'string',
-          enum: ['asc', 'desc'],
-          description: 'Sort order: ascending or descending'
-        }
-      },
-      required: ['query']
-    }
-  },
+  SEARCH_PAPERS_TOOL,
   {
     name: 'search_arxiv',
     description: 'Search academic papers specifically from arXiv preprint server',
@@ -219,110 +179,9 @@ const BASE_TOOLS: CliTool[] = [
       required: ['query']
     }
   },
-  {
-    name: 'search_semantic_snippets',
-    description:
-      'Search Semantic Scholar Open Access snippet index for text excerpts from titles, abstracts, and body text. Requires SEMANTIC_SCHOLAR_API_KEY.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Natural-language query for text snippets' },
-        limit: {
-          type: 'number',
-          minimum: 1,
-          maximum: 1000,
-          description: 'Maximum number of snippet results to return. Default: 5'
-        },
-        year: { type: 'string', description: 'Publication year filter, e.g. "2020-2024"' },
-        fieldsOfStudy: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Field-of-study filter, e.g. "Medicine" or ["Medicine","Biology"]'
-        },
-        paperIds: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Optional paper IDs to restrict results to, comma-separated or array'
-        },
-        authors: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Optional author-name filter, comma-separated or array'
-        },
-        venue: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Optional venue filter, comma-separated or array'
-        },
-        minCitationCount: {
-          type: 'number',
-          minimum: 0,
-          description: 'Only return snippets from papers with at least this many citations'
-        },
-        publicationDateOrYear: {
-          type: 'string',
-          description: 'Publication date/year range, e.g. "2020-01-01:2024-12-31"'
-        },
-        fields: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Optional Semantic Scholar snippet fields to return'
-        }
-      },
-      required: ['query']
-    }
-  },
-  {
-    name: 'get_paper_citations',
-    description:
-      'Get citing papers for a target paper using Semantic Scholar Graph API. Provide one of paperId, doi, or arxivId.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        paperId: {
-          type: 'string',
-          description: 'Semantic Scholar paper id or external id such as DOI:10.xxxx/xxxxx'
-        },
-        doi: {
-          type: 'string',
-          description: 'DOI for the target paper; converted to DOI:<doi>'
-        },
-        arxivId: {
-          type: 'string',
-          description: 'arXiv id for the target paper; converted to ARXIV:<id>'
-        },
-        limit: {
-          type: 'number',
-          minimum: 1,
-          maximum: 100,
-          description: 'Maximum number of citing papers to return. Default: 100'
-        }
-      }
-    }
-  },
-  {
-    name: 'get_paper_references',
-    description:
-      'Get cited references for a target paper using Semantic Scholar Graph API. Provide one of paperId, doi, or arxivId.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        paperId: {
-          type: 'string',
-          description: 'Semantic Scholar paper id or external id such as DOI:10.xxxx/xxxxx'
-        },
-        doi: {
-          type: 'string',
-          description: 'DOI for the target paper; converted to DOI:<doi>'
-        },
-        arxivId: {
-          type: 'string',
-          description: 'arXiv id for the target paper; converted to ARXIV:<id>'
-        },
-        limit: {
-          type: 'number',
-          minimum: 1,
-          maximum: 100,
-          description: 'Maximum number of cited references to return. Default: 100'
-        }
-      }
-    }
-  },
+  SEARCH_SEMANTIC_SNIPPETS_TOOL,
+  GET_PAPER_CITATIONS_TOOL,
+  GET_PAPER_REFERENCES_TOOL,
   {
     name: 'search_iacr',
     description: 'Search IACR ePrint Archive for cryptography papers',
@@ -344,26 +203,7 @@ const BASE_TOOLS: CliTool[] = [
       required: ['query']
     }
   },
-  {
-    name: 'download_paper',
-    description: 'Download PDF file of an academic paper. Native downloads are tried first; unsupported or failed native downloads use the fallback funnel ending with Sci-Hub.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        paperId: { type: 'string', description: 'Paper ID (e.g., arXiv ID, DOI for Sci-Hub)' },
-        platform: {
-          type: 'string',
-          enum: [...new Set([...SEARCH_PLATFORM_VALUES, 'wiley'])],
-          description: 'Platform where the paper is from. If native download is unsupported or fails, the fallback funnel is used.'
-        },
-        savePath: {
-          type: 'string',
-          description: 'Directory to save the PDF file'
-        }
-      },
-      required: ['paperId', 'platform']
-    }
-  },
+  DOWNLOAD_PAPER_TOOL,
   {
     name: 'search_google_scholar',
     description: 'Search Google Scholar for academic papers using web scraping',
@@ -393,22 +233,7 @@ const BASE_TOOLS: CliTool[] = [
       required: ['query']
     }
   },
-  {
-    name: 'get_paper_by_doi',
-    description: 'Retrieve paper information using DOI from available platforms',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        doi: { type: 'string', description: 'DOI (Digital Object Identifier)' },
-        platform: {
-          type: 'string',
-          enum: ['arxiv', 'webofscience', 'pubmed', 'crossref', 'openalex', 'unpaywall', 'pmc', 'europepmc', 'core', 'all'],
-          description: 'Platform to search'
-        }
-      },
-      required: ['doi']
-    }
-  },
+  GET_PAPER_BY_DOI_TOOL,
   {
     name: 'search_scihub',
     description:
@@ -461,32 +286,7 @@ const BASE_TOOLS: CliTool[] = [
       }
     }
   },
-  {
-    name: 'query_journal_metrics',
-    description:
-      'Query journal-level metrics from EasyScholar, including JCR impact factor, JCR quartile, CAS zones, JCI, ESI, and optional raw official/custom rank fields. Requires EASYSCHOLAR_KEY.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        journal: {
-          type: 'string',
-          description: 'Single journal name to query'
-        },
-        journals: {
-          anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
-          description: 'Journal names as an array or a newline/comma/semicolon-separated string'
-        },
-        file: {
-          type: 'string',
-          description: 'Text file with one journal name per line'
-        },
-        includeRaw: {
-          type: 'boolean',
-          description: 'Include raw officialRank.all, officialRank.select, and customRank objects. Default: false.'
-        }
-      }
-    }
-  },
+  QUERY_JOURNAL_METRICS_TOOL,
   {
     name: 'search_sciencedirect',
     description: 'Search academic papers from Elsevier ScienceDirect database (requires API key)',
@@ -697,26 +497,7 @@ const BASE_TOOLS: CliTool[] = [
       required: ['query']
     }
   },
-  {
-    name: 'download_with_fallback',
-    description:
-      'Download with a funnel fallback chain: source-native download, metadata PDF URL, PMC/Europe PMC/CORE/OpenAIRE discovery, Unpaywall DOI resolution, then Sci-Hub as the final fallback unless useSciHub=false.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        source: { type: 'string', description: 'Primary source name, e.g. arxiv, crossref, pmc, core' },
-        paperId: { type: 'string', description: 'Source-native paper identifier' },
-        doi: { type: 'string', description: 'Optional DOI for OA fallback resolution' },
-        title: { type: 'string', description: 'Optional title for repository discovery fallback' },
-        savePath: { type: 'string', description: 'Directory to save the PDF file' },
-        useSciHub: {
-          type: 'boolean',
-          description: 'Use Sci-Hub as the final fallback. Default: true. Set false only to suppress this final stage.'
-        }
-      },
-      required: ['source', 'paperId']
-    }
-  }
+  DOWNLOAD_WITH_FALLBACK_TOOL
 ];
 
 const GENERIC_SEARCH_PROPERTIES = {
@@ -746,8 +527,7 @@ const GENERIC_SEARCH_PROPERTIES = {
 };
 
 function createRegistrySearchTools(): CliTool[] {
-  const tools = PLATFORM_METADATA
-    .filter(platform => platform.directTool && platform.toolName)
+  const tools = getGenericPlatformToolDescriptors()
     .map(platform => ({
       name: platform.toolName as string,
       description: platform.description || `Search academic papers from ${platform.displayName}`,

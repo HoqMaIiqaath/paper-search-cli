@@ -1,50 +1,18 @@
 import { z } from 'zod';
-import { getGenericSearchToolPlatform, isKnownSearchPlatform } from './platformMetadata.js';
+import { getGenericSearchToolPlatform } from './platformMetadata.js';
 import { HARD_CORE_MAX_RESULTS_CAP, getCoreMaxResultsCap } from '../config/ResultCaps.js';
+import { SearchSemanticSnippetsSchema } from '../capabilities/body-snippet-search/schemas.js';
+import { CitationLookupSchema } from '../capabilities/citation-expansion/schemas.js';
+import { GetPaperByDoiSchema, SearchPapersSchema } from '../capabilities/metadata-search/schemas.js';
+import { QueryJournalMetricsSchema } from '../capabilities/journal-metrics/schemas.js';
+import { DownloadPaperSchema, DownloadWithFallbackSchema } from '../capabilities/pdf-discovery/schemas.js';
+export { CitationLookupSchema };
+export { DownloadPaperSchema, DownloadWithFallbackSchema };
+export { GetPaperByDoiSchema, SearchPapersSchema };
+export { QueryJournalMetricsSchema };
+export { SearchSemanticSnippetsSchema };
 const SortBySchema = z.enum(['relevance', 'date', 'citations']);
 const SortOrderSchema = z.enum(['asc', 'desc']);
-const SearchPlatformSchema = z
-    .string()
-    .min(1)
-    .refine(value => value === 'all' || isKnownSearchPlatform(value), {
-    message: 'Unsupported search platform'
-});
-export const SearchPapersSchema = z
-    .object({
-    query: z.string().min(1),
-    platform: z
-        .union([SearchPlatformSchema, z.literal('all')])
-        .optional()
-        .default('crossref'),
-    sources: z.string().optional(),
-    maxResults: z.number().int().min(1).max(HARD_CORE_MAX_RESULTS_CAP).optional().default(10),
-    year: z.string().optional(),
-    author: z.string().optional(),
-    journal: z.string().optional(),
-    category: z.string().optional(),
-    days: z.number().int().min(1).max(3650).optional(),
-    fetchDetails: z.boolean().optional(),
-    fieldsOfStudy: z.array(z.string()).optional(),
-    sortBy: SortBySchema.optional().default('relevance'),
-    sortOrder: SortOrderSchema.optional().default('desc')
-})
-    .strip()
-    .superRefine((value, ctx) => {
-    if (!value.sources && value.platform === 'core') {
-        assertCoreMaxResults(value.maxResults, ctx);
-        return;
-    }
-    if (value.maxResults > 100) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.too_big,
-            maximum: 100,
-            type: 'number',
-            inclusive: true,
-            message: 'Number must be less than or equal to 100',
-            path: ['maxResults']
-        });
-    }
-});
 export const SearchArxivSchema = z
     .object({
     query: z.string().min(1),
@@ -97,45 +65,11 @@ export const SearchSemanticScholarSchema = z
     fieldsOfStudy: z.array(z.string()).optional()
 })
     .strip();
-export const SearchSemanticSnippetsSchema = z
-    .object({
-    query: z.string().min(1),
-    limit: z.number().int().min(1).max(1000).optional().default(5),
-    year: z.string().optional(),
-    fieldsOfStudy: z.union([z.string(), z.array(z.string())]).optional(),
-    paperIds: z.union([z.string(), z.array(z.string())]).optional(),
-    authors: z.union([z.string(), z.array(z.string())]).optional(),
-    venue: z.union([z.string(), z.array(z.string())]).optional(),
-    minCitationCount: z.number().int().min(0).optional(),
-    publicationDateOrYear: z.string().optional(),
-    fields: z.union([z.string(), z.array(z.string())]).optional()
-})
-    .strip();
-export const CitationLookupSchema = z
-    .object({
-    paperId: z.coerce.string().min(1).optional(),
-    doi: z.coerce.string().min(1).optional(),
-    arxivId: z.coerce.string().min(1).optional(),
-    limit: z.number().int().min(1).max(100).optional().default(100)
-})
-    .strip()
-    .refine(value => Boolean(value.paperId || value.doi || value.arxivId), {
-    message: 'Provide paperId, doi, or arxivId'
-});
 export const SearchIACRSchema = z
     .object({
     query: z.string().min(1),
     maxResults: z.number().int().min(1).max(50).optional().default(10),
     fetchDetails: z.boolean().optional()
-})
-    .strip();
-export const DownloadPaperSchema = z
-    .object({
-    paperId: z.coerce.string().min(1),
-    platform: z.coerce.string().min(1).refine(value => value === 'wiley' || isKnownSearchPlatform(value), {
-        message: 'Unsupported download platform'
-    }),
-    savePath: z.coerce.string().optional()
 })
     .strip();
 export const SearchGoogleScholarSchema = z
@@ -145,26 +79,6 @@ export const SearchGoogleScholarSchema = z
     yearLow: z.number().int().optional(),
     yearHigh: z.number().int().optional(),
     author: z.string().optional()
-})
-    .strip();
-export const GetPaperByDoiSchema = z
-    .object({
-    doi: z.coerce.string().min(1),
-    platform: z
-        .enum([
-        'arxiv',
-        'webofscience',
-        'pubmed',
-        'crossref',
-        'openalex',
-        'unpaywall',
-        'pmc',
-        'europepmc',
-        'core',
-        'all'
-    ])
-        .optional()
-        .default('all')
 })
     .strip();
 export const SearchSciHubSchema = z
@@ -273,32 +187,11 @@ export const GenericPlatformSearchSchema = z
     sortOrder: SortOrderSchema.optional().default('desc')
 })
     .strip();
-export const DownloadWithFallbackSchema = z
-    .object({
-    source: z.coerce.string().min(1),
-    paperId: z.coerce.string().min(1),
-    doi: z.coerce.string().optional().default(''),
-    title: z.coerce.string().optional().default(''),
-    savePath: z.coerce.string().optional(),
-    useSciHub: z.boolean().optional().default(true)
-})
-    .strip();
 export const GetPlatformStatusSchema = z
     .object({
     validate: z.boolean().optional().default(false)
 })
     .strip();
-export const QueryJournalMetricsSchema = z
-    .object({
-    journal: z.string().optional(),
-    journals: z.union([z.string(), z.array(z.string())]).optional(),
-    file: z.string().optional(),
-    includeRaw: z.boolean().optional().default(false)
-})
-    .strip()
-    .refine(value => Boolean(value.journal || value.journals || value.file), {
-    message: 'Provide journal, journals, or file'
-});
 export function parseToolArgs(toolName, args) {
     if (getGenericSearchToolPlatform(String(toolName))) {
         return GenericPlatformSearchSchema.parse(args);

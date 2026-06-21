@@ -1,0 +1,1 @@
+{"version":3,"file":"handler.d.ts","sourceRoot":"","sources":["../../../src/capabilities/journal-metrics/handler.ts"],"names":[],"mappings":"AAuBA,wBAAsB,oBAAoB,CAAC,IAAI,EAAE;IAC/C,OAAO,CAAC,EAAE,OAAO,CAAC;IAClB,QAAQ,CAAC,EAAE,OAAO,CAAC;IACnB,IAAI,CAAC,EAAE,OAAO,CAAC;IACf,UAAU,CAAC,EAAE,OAAO,CAAC;CACtB;;;;;GAgBA"}

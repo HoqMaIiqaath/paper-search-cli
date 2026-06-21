@@ -13,8 +13,8 @@ import {
   diagnoseToolResult,
   diagnosticContextFromCli,
   getRequirementStatus
-} from './core/diagnostics.js';
-import { buildCapabilityProfile } from './core/capabilityProfile.js';
+} from './management/diagnostics/index.js';
+import { buildCapabilityProfile } from './management/capability-profile/index.js';
 import type { ToolName } from './core/schemas.js';
 import {
   CONFIG_KEYS,
@@ -28,8 +28,8 @@ import {
   assertConfigKey,
   setUserConfigValue,
   unsetUserConfigValue
-} from './config/ConfigService.js';
-import type { ConfigKey } from './config/ConfigService.js';
+} from './management/config/index.js';
+import type { ConfigKey } from './management/config/index.js';
 import { setupGlobalProxy } from './utils/HttpClient.js';
 import {
   defaultSkillTargetIds,
@@ -38,9 +38,9 @@ import {
   installSkillTargets,
   parseSkillTargets,
   statusSkillTargets
-} from './skills/SkillInstaller.js';
-import { renderDoctorTextReport, renderSkillDiffTextReport } from './core/textReports.js';
-import { runLiveSmoke } from './core/liveSmoke.js';
+} from './management/skills/index.js';
+import { renderDoctorTextReport, renderSkillDiffTextReport } from './management/reports/index.js';
+import { runLiveSmoke } from './management/smoke/index.js';
 
 dotenv.config();
 loadUserConfigIntoEnv();

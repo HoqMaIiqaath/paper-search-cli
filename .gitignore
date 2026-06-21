@@ -142,6 +142,6 @@ claude-paper-search-nodejs.md
 WARP.md
 
 # Academic search results cache
-cache/
+/cache/
 *.cache
 .ace-tool/

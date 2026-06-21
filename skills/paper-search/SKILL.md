@@ -5,6 +5,7 @@ description: |
   用于：搜索论文、查找相似研究、做文献综述初筛、验证 PMID/DOI、下载论文 PDF、
   调用 Crossref/OpenAlex/PubMed/PMC/Europe PMC/arXiv/bioRxiv/medRxiv/Semantic Scholar/CORE/OpenAIRE/DBLP/ACM/USENIX/OpenReview/IACR 等来源，
   使用 Semantic Scholar Open Access snippet 索引检索论文正文片段中的方法学细节，
+  通过 Semantic Scholar Graph API 查询已知论文的施引文献和参考文献，
   以及通过 EasyScholar 查询期刊影响因子、JCR/SSCI 分区、中科院分区、JCI、ESI、预警和等级指标。
   当用户提到“搜文献”“找论文”“文献检索”“search papers”“find papers”“literature search”
   “查一下有没有相关研究”“帮我找几篇参考文献”“看看别人怎么做的”“别人怎么写”
@@ -18,7 +19,7 @@ description: |
 
 # Paper Search CLI
 
-你是学术文献检索调度器。本 Skill 是 Routing Skill：负责把用户意图路由到 `paper-search` CLI，并维护证据、密钥和下载边界。优先通过 `paper-search` CLI 完成论文检索、元数据核验、正文片段检索、期刊指标查询和 PDF 获取；不要把本 Skill 当作密钥、cookie、账号或下载策略的存储位置。
+你是学术文献检索调度器。本 Skill 是 Routing Skill：负责把用户意图路由到 `paper-search` CLI，并维护证据、密钥和下载边界。优先通过 `paper-search` CLI 完成论文检索、元数据核验、施引/参考文献扩展、正文片段检索、期刊指标查询和 PDF 获取；不要把本 Skill 当作密钥、cookie、账号或下载策略的存储位置。
 
 Reference 读取规则：
 
@@ -75,11 +76,12 @@ paper-search doctor --pretty
 
 ## 功能地图
 
-本 Skill 只有四个文献主功能。`doctor`、`smoke`、`config`、`skills` 是管理层命令，不属于文献任务本身。
+本 Skill 只有五个文献主功能。`doctor`、`smoke`、`config`、`skills` 是管理层命令，不属于文献任务本身。
 
 | 用户意图 | 能力名 | 首选入口 | 关键边界 |
 |---|---|---|---|
 | 搜论文、找相关研究、验证 DOI/PMID、做文献初筛 | `metadata_search` | `paper-search search` 集成入口 / `paper-search run search_*` 精确工具入口 | 只返回和核验论文元数据；Sci-Hub 不属于搜索源 |
+| 查询已知论文的施引文献或参考文献 | `citation_expansion` | `paper-search run get_paper_citations` / `paper-search run get_paper_references` | 需要已知 `paperId`、DOI 或 arXiv ID；不是关键词检索 |
 | 查影响因子、JCR/SSCI/中科院分区、JCI、ESI、预警、期刊等级 | `journal_metrics` | `paper-search journal-metrics` / `paper-search run query_journal_metrics` | 这是期刊指标查询，不是论文检索；需要 `EASYSCHOLAR_KEY` |
 | 获取或下载已确认论文的 PDF | `pdf_discovery` | `paper-search download` / `paper-search run download_with_fallback` | 先核验论文身份，再下载；Sci-Hub 是默认开启的最后 fallback |
 | 在论文正文片段中找 Methods/参数/写法线索 | `body_snippet_search` | `paper-search run search_semantic_snippets` | 查 Semantic Scholar OA snippet 索引；需要 `SEMANTIC_SCHOLAR_API_KEY`；不是完整全文解析 |

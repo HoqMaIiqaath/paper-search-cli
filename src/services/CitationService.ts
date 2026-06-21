@@ -187,9 +187,12 @@ export class CitationService {
         'paperId',
         'title',
         'citationCount',
+        'referenceCount',
         'year',
         'authors',
-        'venue'
+        'venue',
+        'externalIds',
+        'url'
       ].join(',');
 
       const response = await ErrorHandler.retryWithBackoff(
@@ -224,9 +227,12 @@ export class CitationService {
         'paperId',
         'title',
         'citationCount',
+        'referenceCount',
         'year',
         'authors',
-        'venue'
+        'venue',
+        'externalIds',
+        'url'
       ].join(',');
 
       const response = await ErrorHandler.retryWithBackoff(

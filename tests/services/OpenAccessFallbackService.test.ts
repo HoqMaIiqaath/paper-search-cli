@@ -1,5 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { downloadWithFallback } from '../../src/services/OpenAccessFallbackService.js';
+import {
+  downloadWithFallback,
+  INSTITUTIONAL_ACCESS_TIER_ID
+} from '../../src/services/OpenAccessFallbackService.js';
 
 describe('OpenAccessFallbackService', () => {
   it('uses Sci-Hub as the final fallback by default', async () => {
@@ -23,7 +26,14 @@ describe('OpenAccessFallbackService', () => {
     expect(result.status).toBe('ok');
     expect(result.path).toBe('/tmp/paper.pdf');
     expect(scihubDownload).toHaveBeenCalledWith('10.1000/example', { savePath: './downloads' });
-    expect(result.attempts.map(attempt => attempt.stage)).toContain('scihub');
+    expect(result.attempts.map(attempt => attempt.stage)).toEqual([
+      'primary',
+      'direct_pdf_url',
+      'repositories',
+      'unpaywall',
+      'scihub'
+    ]);
+    expect(result.attempts.map(attempt => attempt.stage)).not.toContain(INSTITUTIONAL_ACCESS_TIER_ID);
   });
 
   it('allows callers to suppress the Sci-Hub fallback explicitly', async () => {
@@ -52,5 +62,12 @@ describe('OpenAccessFallbackService', () => {
       status: 'skipped',
       message: 'Sci-Hub fallback disabled by useSciHub=false.'
     });
+    expect(result.attempts.map(attempt => attempt.stage)).toEqual([
+      'primary',
+      'direct_pdf_url',
+      'repositories',
+      'unpaywall',
+      'scihub'
+    ]);
   });
 });

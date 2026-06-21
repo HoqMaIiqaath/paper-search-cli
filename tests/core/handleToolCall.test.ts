@@ -1,6 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { handleToolCall } from '../../src/core/handleToolCall.js';
 import { PaperFactory } from '../../src/models/Paper.js';
+import CitationService from '../../src/services/CitationService.js';
 
 function responseData(response: any): any {
   const text = response.content[0].text;
@@ -9,6 +10,10 @@ function responseData(response: any): any {
 }
 
 describe('handleToolCall', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe('download_paper fallback', () => {
     it('routes unsupported platform downloads through the fallback funnel including Sci-Hub', async () => {
       const searchers = {
@@ -33,6 +38,84 @@ describe('handleToolCall', () => {
       expect(data.status).toBe('ok');
       expect(data.path).toBe('/tmp/fallback.pdf');
       expect(data.attempts.map((attempt: any) => attempt.stage)).toContain('scihub');
+    });
+  });
+
+  describe('citation expansion tools', () => {
+    it('returns citing papers from CitationService', async () => {
+      const citation = {
+        paperId: 'citing-1',
+        title: 'Citing Paper',
+        citationCount: 12,
+        referenceCount: 34,
+        year: 2024,
+        authors: [{ name: 'A. Author' }],
+        venue: 'Test Venue',
+        doi: '10.1000/citing',
+        url: 'https://www.semanticscholar.org/paper/citing-1'
+      };
+      const getCitations = jest.spyOn(CitationService.prototype, 'getCitations').mockResolvedValue([citation]);
+
+      const response = await handleToolCall(
+        'get_paper_citations',
+        { doi: '10.1000/example', limit: 5 },
+        {} as any
+      );
+      const data = responseData(response);
+
+      expect(getCitations).toHaveBeenCalledWith('DOI:10.1000/example', 5);
+      expect(data).toEqual({
+        target: 'DOI:10.1000/example',
+        relation: 'citations',
+        provider: 'semantic_scholar',
+        total: 1,
+        papers: [citation]
+      });
+    });
+
+    it('returns cited references from CitationService', async () => {
+      const reference = {
+        paperId: 'reference-1',
+        title: 'Reference Paper',
+        citationCount: 7,
+        referenceCount: 21,
+        year: 2020,
+        authors: [{ name: 'B. Author' }],
+        venue: 'Reference Venue',
+        doi: '10.1000/reference',
+        url: 'https://www.semanticscholar.org/paper/reference-1'
+      };
+      const getReferences = jest.spyOn(CitationService.prototype, 'getReferences').mockResolvedValue([reference]);
+
+      const response = await handleToolCall(
+        'get_paper_references',
+        { arxivId: '2401.00001', limit: 2 },
+        {} as any
+      );
+      const data = responseData(response);
+
+      expect(getReferences).toHaveBeenCalledWith('ARXIV:2401.00001', 2);
+      expect(data.relation).toBe('references');
+      expect(data.provider).toBe('semantic_scholar');
+      expect(data.total).toBe(1);
+      expect(data.papers).toEqual([reference]);
+    });
+
+    it('uses paperId before doi and arxivId when multiple citation identifiers are present', async () => {
+      const getCitations = jest.spyOn(CitationService.prototype, 'getCitations').mockResolvedValue([]);
+
+      await handleToolCall(
+        'get_paper_citations',
+        {
+          paperId: 'semantic-paper-id',
+          doi: '10.1000/example',
+          arxivId: '2401.00001',
+          limit: 3
+        },
+        {} as any
+      );
+
+      expect(getCitations).toHaveBeenCalledWith('semantic-paper-id', 3);
     });
   });
 

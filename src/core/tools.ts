@@ -268,6 +268,62 @@ const BASE_TOOLS: CliTool[] = [
     }
   },
   {
+    name: 'get_paper_citations',
+    description:
+      'Get citing papers for a target paper using Semantic Scholar Graph API. Provide one of paperId, doi, or arxivId.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paperId: {
+          type: 'string',
+          description: 'Semantic Scholar paper id or external id such as DOI:10.xxxx/xxxxx'
+        },
+        doi: {
+          type: 'string',
+          description: 'DOI for the target paper; converted to DOI:<doi>'
+        },
+        arxivId: {
+          type: 'string',
+          description: 'arXiv id for the target paper; converted to ARXIV:<id>'
+        },
+        limit: {
+          type: 'number',
+          minimum: 1,
+          maximum: 100,
+          description: 'Maximum number of citing papers to return. Default: 100'
+        }
+      }
+    }
+  },
+  {
+    name: 'get_paper_references',
+    description:
+      'Get cited references for a target paper using Semantic Scholar Graph API. Provide one of paperId, doi, or arxivId.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paperId: {
+          type: 'string',
+          description: 'Semantic Scholar paper id or external id such as DOI:10.xxxx/xxxxx'
+        },
+        doi: {
+          type: 'string',
+          description: 'DOI for the target paper; converted to DOI:<doi>'
+        },
+        arxivId: {
+          type: 'string',
+          description: 'arXiv id for the target paper; converted to ARXIV:<id>'
+        },
+        limit: {
+          type: 'number',
+          minimum: 1,
+          maximum: 100,
+          description: 'Maximum number of cited references to return. Default: 100'
+        }
+      }
+    }
+  },
+  {
     name: 'search_iacr',
     description: 'Search IACR ePrint Archive for cryptography papers',
     inputSchema: {

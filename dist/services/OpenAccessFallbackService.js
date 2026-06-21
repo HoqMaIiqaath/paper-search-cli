@@ -1,75 +1,91 @@
 import { downloadPdfFromUrl, safeFilename } from '../utils/PdfDownload.js';
+export const INSTITUTIONAL_ACCESS_TIER_ID = 'institutional_access';
 const REPOSITORY_SOURCES = ['pmc', 'europepmc', 'core', 'openaire'];
+const DEFAULT_DOWNLOAD_TIERS = [
+    {
+        id: 'primary',
+        stage: 'primary',
+        run: tryPrimaryDownload
+    },
+    {
+        id: 'direct_pdf_url',
+        stage: 'direct_pdf_url',
+        run: tryDirectMetadataUrl
+    },
+    {
+        id: 'repositories',
+        stage: 'repositories',
+        run: tryRepositoryFallback
+    },
+    {
+        id: 'unpaywall',
+        stage: 'unpaywall',
+        run: tryUnpaywall
+    },
+    {
+        id: 'scihub',
+        stage: 'scihub',
+        run: trySciHub
+    }
+];
 export async function downloadWithFallback(searchers, options) {
     const savePath = options.savePath || './downloads';
     const attempts = [];
-    const source = normalizeSource(options.source);
-    const primary = searchers[source];
-    if (primary?.getCapabilities().download) {
-        try {
-            const path = await primary.downloadPdf(options.paperId, { savePath });
-            attempts.push({ stage: 'primary', status: 'ok', message: path });
-            return { status: 'ok', path, attempts };
+    const context = {
+        searchers,
+        source: normalizeSource(options.source),
+        paperId: options.paperId,
+        doi: options.doi,
+        title: options.title,
+        savePath,
+        useSciHub: options.useSciHub !== false
+    };
+    for (const tier of DEFAULT_DOWNLOAD_TIERS) {
+        const result = await tier.run(context);
+        attempts.push({ stage: tier.stage, status: result.status, message: result.message });
+        if (result.status === 'ok' && result.path) {
+            return { status: 'ok', path: result.path, attempts };
         }
-        catch (error) {
-            attempts.push({ stage: 'primary', status: 'error', message: error?.message || String(error) });
-        }
-    }
-    else {
-        attempts.push({ stage: 'primary', status: 'skipped', message: `No primary downloader for ${source}` });
-    }
-    const directResult = await tryDirectMetadataUrl(searchers, source, options.paperId, savePath, attempts);
-    if (directResult)
-        return { status: 'ok', path: directResult, attempts };
-    const repositoryResult = await tryRepositoryFallback(searchers, options, savePath, attempts);
-    if (repositoryResult)
-        return { status: 'ok', path: repositoryResult, attempts };
-    const unpaywallResult = await tryUnpaywall(searchers, options.doi || '', savePath, attempts);
-    if (unpaywallResult)
-        return { status: 'ok', path: unpaywallResult, attempts };
-    if (options.useSciHub !== false) {
-        const identifier = options.doi || options.title || options.paperId;
-        try {
-            const path = await searchers.scihub.downloadPdf(identifier, { savePath });
-            attempts.push({ stage: 'scihub', status: 'ok', message: path });
-            return { status: 'ok', path, attempts };
-        }
-        catch (error) {
-            attempts.push({ stage: 'scihub', status: 'error', message: error?.message || String(error) });
-        }
-    }
-    else {
-        attempts.push({ stage: 'scihub', status: 'skipped', message: 'Sci-Hub fallback disabled by useSciHub=false.' });
     }
     return { status: 'error', attempts };
 }
-async function tryDirectMetadataUrl(searchers, source, paperId, savePath, attempts) {
-    const searcher = searchers[source];
-    if (!searcher)
-        return '';
+async function tryPrimaryDownload(context) {
+    const primary = context.searchers[context.source];
+    if (!primary?.getCapabilities().download) {
+        return { status: 'skipped', message: `No primary downloader for ${context.source}` };
+    }
     try {
-        const paper = await searcher.getPaperByDoi(paperId);
-        if (!paper?.pdfUrl) {
-            attempts.push({ stage: 'direct_pdf_url', status: 'skipped', message: 'No pdf_url found in source metadata.' });
-            return '';
-        }
-        const path = await downloadPdfFromUrl(paper.pdfUrl, savePath, `${source}_${safeFilename(paper.paperId)}`);
-        attempts.push({ stage: 'direct_pdf_url', status: 'ok', message: path });
-        return path;
+        const path = await primary.downloadPdf(context.paperId, { savePath: context.savePath });
+        return { status: 'ok', path, message: path };
     }
     catch (error) {
-        attempts.push({ stage: 'direct_pdf_url', status: 'error', message: error?.message || String(error) });
-        return '';
+        return { status: 'error', message: error?.message || String(error) };
     }
 }
-async function tryRepositoryFallback(searchers, options, savePath, attempts) {
-    const queries = [options.doi || '', options.title || ''].filter(Boolean);
+async function tryDirectMetadataUrl(context) {
+    const searcher = context.searchers[context.source];
+    if (!searcher) {
+        return { status: 'skipped', message: `No metadata searcher for ${context.source}.` };
+    }
+    try {
+        const paper = await searcher.getPaperByDoi(context.paperId);
+        if (!paper?.pdfUrl) {
+            return { status: 'skipped', message: 'No pdf_url found in source metadata.' };
+        }
+        const path = await downloadPdfFromUrl(paper.pdfUrl, context.savePath, `${context.source}_${safeFilename(paper.paperId)}`);
+        return { status: 'ok', path, message: path };
+    }
+    catch (error) {
+        return { status: 'error', message: error?.message || String(error) };
+    }
+}
+async function tryRepositoryFallback(context) {
+    const queries = [context.doi || '', context.title || ''].filter(Boolean);
     if (queries.length === 0) {
-        attempts.push({ stage: 'repositories', status: 'skipped', message: 'No DOI/title provided for repository discovery.' });
-        return '';
+        return { status: 'skipped', message: 'No DOI/title provided for repository discovery.' };
     }
     for (const source of REPOSITORY_SOURCES) {
-        const searcher = searchers[source];
+        const searcher = context.searchers[source];
         if (!searcher)
             continue;
         for (const query of queries) {
@@ -78,37 +94,44 @@ async function tryRepositoryFallback(searchers, options, savePath, attempts) {
                 const paper = papers.find(candidate => candidate.pdfUrl);
                 if (!paper?.pdfUrl)
                     continue;
-                const path = await downloadPdfFromUrl(paper.pdfUrl, savePath, `${source}_${safeFilename(paper.paperId)}`);
-                attempts.push({ stage: `repository:${source}`, status: 'ok', message: path });
-                return path;
+                const path = await downloadPdfFromUrl(paper.pdfUrl, context.savePath, `${source}_${safeFilename(paper.paperId)}`);
+                return { status: 'ok', path, message: path };
             }
-            catch (error) {
-                attempts.push({ stage: `repository:${source}`, status: 'error', message: error?.message || String(error) });
+            catch {
+                continue;
             }
         }
     }
-    attempts.push({ stage: 'repositories', status: 'skipped', message: 'No repository PDF candidate succeeded.' });
-    return '';
+    return { status: 'skipped', message: 'No repository PDF candidate succeeded.' };
 }
-async function tryUnpaywall(searchers, doi, savePath, attempts) {
-    if (!doi) {
-        attempts.push({ stage: 'unpaywall', status: 'skipped', message: 'DOI not provided.' });
-        return '';
+async function tryUnpaywall(context) {
+    if (!context.doi) {
+        return { status: 'skipped', message: 'DOI not provided.' };
     }
     try {
-        const unpaywall = searchers.unpaywall;
-        const pdfUrl = await unpaywall.resolveBestPdfUrl(doi);
+        const unpaywall = context.searchers.unpaywall;
+        const pdfUrl = await unpaywall.resolveBestPdfUrl(context.doi);
         if (!pdfUrl) {
-            attempts.push({ stage: 'unpaywall', status: 'skipped', message: 'No OA PDF URL found or email not configured.' });
-            return '';
+            return { status: 'skipped', message: 'No OA PDF URL found or email not configured.' };
         }
-        const path = await downloadPdfFromUrl(pdfUrl, savePath, `unpaywall_${safeFilename(doi)}`);
-        attempts.push({ stage: 'unpaywall', status: 'ok', message: path });
-        return path;
+        const path = await downloadPdfFromUrl(pdfUrl, context.savePath, `unpaywall_${safeFilename(context.doi)}`);
+        return { status: 'ok', path, message: path };
     }
     catch (error) {
-        attempts.push({ stage: 'unpaywall', status: 'error', message: error?.message || String(error) });
-        return '';
+        return { status: 'error', message: error?.message || String(error) };
+    }
+}
+async function trySciHub(context) {
+    if (!context.useSciHub) {
+        return { status: 'skipped', message: 'Sci-Hub fallback disabled by useSciHub=false.' };
+    }
+    const identifier = context.doi || context.title || context.paperId;
+    try {
+        const path = await context.searchers.scihub.downloadPdf(identifier, { savePath: context.savePath });
+        return { status: 'ok', path, message: path };
+    }
+    catch (error) {
+        return { status: 'error', message: error?.message || String(error) };
     }
 }
 function normalizeSource(source) {

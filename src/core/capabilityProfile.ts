@@ -3,7 +3,13 @@ import { CONFIG_KEYS, listConfigEntries } from '../config/ConfigService.js';
 export type CapabilityStatus = 'available' | 'degraded' | 'unavailable';
 
 export interface CapabilityEntry {
-  id: 'metadata_search' | 'body_snippet_search' | 'journal_metrics' | 'pdf_discovery' | 'entitled_access';
+  id:
+    | 'metadata_search'
+    | 'citation_expansion'
+    | 'body_snippet_search'
+    | 'journal_metrics'
+    | 'pdf_discovery'
+    | 'entitled_access';
   status: CapabilityStatus;
   reason: string;
   configured: string[];
@@ -72,6 +78,7 @@ export function buildCapabilityProfile(): CapabilityProfile {
   const configuredKeys = configuredConfigKeys();
   const entries: CapabilityEntry[] = [
     metadataSearchEntry(configuredKeys),
+    citationExpansionEntry(),
     bodySnippetSearchEntry(configuredKeys),
     journalMetricsEntry(configuredKeys),
     pdfDiscoveryEntry(configuredKeys),
@@ -99,6 +106,20 @@ function metadataSearchEntry(configuredKeys: Set<string>): CapabilityEntry {
       missing_entitled_sources: missingEntitled
     },
     optionalKeys: unique(Object.values(ENTITLED_KEY_BY_SOURCE).flat())
+  };
+}
+
+function citationExpansionEntry(): CapabilityEntry {
+  return {
+    id: 'citation_expansion',
+    status: 'available',
+    reason: 'Semantic Scholar Graph API citation expansion is available; SEMANTIC_SCHOLAR_API_KEY is optional for higher quota.',
+    configured: ['semantic_scholar_graph'],
+    missing: [],
+    sourceGroups: {
+      citation_sources: ['semantic_scholar_graph']
+    },
+    optionalKeys: ['SEMANTIC_SCHOLAR_API_KEY']
   };
 }
 

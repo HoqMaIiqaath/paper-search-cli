@@ -35,6 +35,7 @@ paper-search config list --pretty
 Capability Profile entries are independent workflow capabilities:
 
 - `metadata_search`: metadata search through configured/free literature sources. Sci-Hub must not be included in metadata search.
+- `citation_expansion`: citation and reference expansion for a known paper through Semantic Scholar Graph API. `SEMANTIC_SCHOLAR_API_KEY` is optional for higher quota.
 - `body_snippet_search`: Semantic Scholar Open Access snippet search. It requires `SEMANTIC_SCHOLAR_API_KEY`.
 - `journal_metrics`: EasyScholar journal metrics. It requires `EASYSCHOLAR_KEY`.
 - `pdf_discovery`: PDF discovery and download through source-native download, metadata PDF URLs, open-access sources, entitled-access sources when configured, and the default enabled Sci-Hub Fallback.

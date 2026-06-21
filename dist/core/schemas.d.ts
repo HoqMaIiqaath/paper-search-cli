@@ -227,6 +227,32 @@ export declare const SearchSemanticSnippetsSchema: z.ZodObject<{
     minCitationCount?: number | undefined;
     publicationDateOrYear?: string | undefined;
 }>;
+export declare const CitationLookupSchema: z.ZodEffects<z.ZodObject<{
+    paperId: z.ZodOptional<z.ZodString>;
+    doi: z.ZodOptional<z.ZodString>;
+    arxivId: z.ZodOptional<z.ZodString>;
+    limit: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+}, "strip", z.ZodTypeAny, {
+    limit: number;
+    paperId?: string | undefined;
+    doi?: string | undefined;
+    arxivId?: string | undefined;
+}, {
+    paperId?: string | undefined;
+    doi?: string | undefined;
+    limit?: number | undefined;
+    arxivId?: string | undefined;
+}>, {
+    limit: number;
+    paperId?: string | undefined;
+    doi?: string | undefined;
+    arxivId?: string | undefined;
+}, {
+    paperId?: string | undefined;
+    doi?: string | undefined;
+    limit?: number | undefined;
+    arxivId?: string | undefined;
+}>;
 export declare const SearchIACRSchema: z.ZodObject<{
     query: z.ZodString;
     maxResults: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
@@ -558,6 +584,6 @@ export declare const QueryJournalMetricsSchema: z.ZodEffects<z.ZodObject<{
     file?: string | undefined;
     includeRaw?: boolean | undefined;
 }>;
-export type ToolName = string | 'search_papers' | 'search_arxiv' | 'search_webofscience' | 'search_pubmed' | 'search_biorxiv' | 'search_medrxiv' | 'search_semantic_scholar' | 'search_semantic_snippets' | 'search_iacr' | 'download_paper' | 'search_google_scholar' | 'get_paper_by_doi' | 'search_scihub' | 'check_scihub_mirrors' | 'get_platform_status' | 'search_sciencedirect' | 'search_springer' | 'search_wiley' | 'search_scopus' | 'search_crossref' | 'search_openalex' | 'search_unpaywall' | 'search_pmc' | 'search_europepmc' | 'search_core' | 'search_openaire' | 'download_with_fallback' | 'query_journal_metrics';
+export type ToolName = string | 'search_papers' | 'search_arxiv' | 'search_webofscience' | 'search_pubmed' | 'search_biorxiv' | 'search_medrxiv' | 'search_semantic_scholar' | 'search_semantic_snippets' | 'get_paper_citations' | 'get_paper_references' | 'search_iacr' | 'download_paper' | 'search_google_scholar' | 'get_paper_by_doi' | 'search_scihub' | 'check_scihub_mirrors' | 'get_platform_status' | 'search_sciencedirect' | 'search_springer' | 'search_wiley' | 'search_scopus' | 'search_crossref' | 'search_openalex' | 'search_unpaywall' | 'search_pmc' | 'search_europepmc' | 'search_core' | 'search_openaire' | 'download_with_fallback' | 'query_journal_metrics';
 export declare function parseToolArgs(toolName: ToolName, args: unknown): any;
 //# sourceMappingURL=schemas.d.ts.map

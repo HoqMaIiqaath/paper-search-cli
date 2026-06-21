@@ -624,6 +624,10 @@ async function handleSmokeCommand(flags) {
             ok: !capabilityProfile.entries.find(entry => entry.id === 'metadata_search')?.configured.includes('scihub')
         },
         {
+            name: 'citation_expansion uses Semantic Scholar Graph API',
+            ok: capabilityProfile.entries.find(entry => entry.id === 'citation_expansion')?.configured.includes('semantic_scholar_graph') === true
+        },
+        {
             name: 'pdf_discovery has source groups',
             ok: Boolean(capabilityProfile.entries.find(entry => entry.id === 'pdf_discovery')?.sourceGroups?.open_access_sources) &&
                 Boolean(capabilityProfile.entries.find(entry => entry.id === 'pdf_discovery')?.sourceGroups?.entitled_access_sources) &&

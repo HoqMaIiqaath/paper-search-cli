@@ -2,7 +2,7 @@
 
 简体中文 | [English](README.md)
 
-Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 Node.js 命令行工具构建，用于学术文献工作。它为 AI agent、终端用户和脚本提供一个可复现的命令层，并通过 agent 友好的 JSON 输出覆盖文献元数据检索、期刊指标检索、PDF 获取/下载和论文正文片段检索。
+Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 Node.js 命令行工具构建，用于学术文献工作。它为 AI agent、终端用户和脚本提供一个可复现的命令层，并通过 agent 友好的 JSON 输出覆盖文献元数据检索、施引/参考文献扩展、期刊指标检索、PDF 获取/下载和论文正文片段检索。
 
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
@@ -18,6 +18,7 @@ Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 
 | 功能 | 主要命令 | 返回内容 |
 | --- | --- | --- |
 | 文献元数据检索 | `paper-search search`, `paper-search run search_*` | 题名、作者、年份、期刊、DOI、PMID/PMCID、arXiv ID、URL、摘要和来源元数据 |
+| 引文扩展 | `paper-search run get_paper_citations`, `paper-search run get_paper_references` | 已知 Semantic Scholar paper ID、DOI 或 arXiv ID 对应论文的施引文献和参考文献 |
 | 期刊指标检索 | `paper-search journal-metrics`, `paper-search run query_journal_metrics` | 影响因子、5 年 IF、JCR/SSCI 分区、中科院分区、JCI、ESI、预警和等级字段 |
 | PDF 获取和下载 | `paper-search download`, `paper-search run download_with_fallback` | 通过原生来源、开放获取、已配置权限来源和启用时的 Sci-Hub fallback 获取 PDF |
 | 正文片段检索 | `paper-search run search_semantic_snippets` | Semantic Scholar Open Access 正文片段，用于查方法、参数和写法线索 |
@@ -28,11 +29,11 @@ Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 
 
 | 层 | 负责什么 |
 | --- | --- |
-| CLI 本体 | 执行文献检索、期刊指标检索、PDF 获取/下载、正文片段检索和稳定 JSON 输出 |
+| CLI 本体 | 执行文献检索、引文扩展、期刊指标检索、PDF 获取/下载、正文片段检索和稳定 JSON 输出 |
 | Bundled Skill | 随包发布 `skills/paper-search`，提供 agent 路由规则和 focused references；不保存密钥、cookie 或账号信息 |
-| Friendly Management Layer | 围绕四个主要能力 `metadata_search`、`journal_metrics`、`pdf_discovery`、`body_snippet_search` 提供 `doctor`、`smoke`、`skills`、`config`、`tools`。`doctor` 健康报告包含脱敏配置、Capability Profile、平台/来源状态、缺失项和降级项；`smoke` 检查命令入口连通性和 live 可用性；`skills` 负责同步随包发布的 Skill |
+| Friendly Management Layer | 围绕五个主要能力 `metadata_search`、`citation_expansion`、`journal_metrics`、`pdf_discovery`、`body_snippet_search` 提供 `doctor`、`smoke`、`skills`、`config`、`tools`。`doctor` 健康报告包含脱敏配置、Capability Profile、平台/来源状态、缺失项和降级项；`smoke` 检查命令入口连通性和 live 可用性；`skills` 负责同步随包发布的 Skill |
 
-四个主要能力由 CLI 本体执行，由管理层报告和检查。Capability Profile 也会报告 `entitled_access`，让用户看到出版商 API key、数据库 key、TDM token 或机构权限是否已配置。某一个能力缺少配置或降级，不会导致其他独立能力不可用。
+五个主要能力由 CLI 本体执行，由管理层报告和检查。Capability Profile 也会报告 `entitled_access`，让用户看到出版商 API key、数据库 key、TDM token 或机构权限是否已配置。某一个能力缺少配置或降级，不会导致其他独立能力不可用。
 
 ## 快速开始
 
@@ -44,13 +45,14 @@ paper-search setup
 paper-search doctor --pretty
 ```
 
-尝试四个主要功能：
+尝试五个主要功能：
 
 ```bash
 paper-search search "machine learning clinical prediction" --platform crossref --max-results 3 --pretty
+paper-search run get_paper_citations --arg doi="10.1038/nature12373" --arg limit=5 --pretty
 paper-search journal-metrics "Nature" "BMJ" --pretty
 paper-search download 10.48550/arxiv.1201.0490 --platform arxiv --save-path ./downloads
-paper-search run search_semantic_snippets --arg query="propensity score matching" --arg maxResults=3 --pretty
+paper-search run search_semantic_snippets --arg query="propensity score matching" --arg limit=3 --pretty
 ```
 
 常用检查：
@@ -87,7 +89,7 @@ paper-search skills status --pretty
 | --- | --- | --- | --- | --- | --- | --- |
 | Crossref | ✅ 支持 | ❌ 不支持 | ❌ 不支持 | ✅ 支持 | ❌ 不需要 | 默认广覆盖元数据来源 |
 | OpenAlex | ✅ 支持 | 🟡 条件支持 | ❌ 不支持 | ✅ 支持 | ❌ 不需要 | 免费元数据；记录含 OA 链接时可帮助 PDF fallback |
-| Semantic Scholar | ✅ 支持 | 🟡 条件支持 | ✅ 正文片段 | ✅ 支持 | 🟡 可选；正文片段需要 `SEMANTIC_SCHOLAR_API_KEY` | 适合 AI/CS 和正文片段线索 |
+| Semantic Scholar | ✅ 支持 | 🟡 条件支持 | ✅ 正文片段 | ✅ 支持 | 🟡 可选；正文片段需要 `SEMANTIC_SCHOLAR_API_KEY` | 适合 AI/CS、引文扩展和正文片段线索 |
 | Google Scholar | ✅ 支持 | ❌ 不支持 | ❌ 不支持 | ✅ 支持 | ❌ 不需要 | 基于页面解析的广覆盖发现 |
 
 #### 期刊指标
@@ -205,7 +207,7 @@ paper-search doctor --pretty
 
 ## Agent Skill
 
-npm 包会随包发布 agent Skill，位置是 `skills/paper-search/SKILL.md`。终端用户可以只用 CLI；AI agent 工作流应安装或同步 Skill，让 agent 正确路由四个主要功能。
+npm 包会随包发布 agent Skill，位置是 `skills/paper-search/SKILL.md`。终端用户可以只用 CLI；AI agent 工作流应安装或同步 Skill，让 agent 正确路由五个主要功能。
 
 ```bash
 paper-search setup --install-skills agents

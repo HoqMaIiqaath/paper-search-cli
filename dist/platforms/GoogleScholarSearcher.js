@@ -9,6 +9,7 @@ import { PaperSource } from './PaperSource.js';
 import { TIMEOUTS } from '../config/constants.js';
 import { logDebug } from '../utils/Logger.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
+const SCHOLAR_REQUEST_TIMEOUT_MS = 10000;
 export class GoogleScholarSearcher extends PaperSource {
     scholarUrl = 'https://scholar.google.com/scholar';
     userAgents = [
@@ -122,11 +123,11 @@ export class GoogleScholarSearcher extends PaperSource {
                 'Connection': 'keep-alive',
                 'Upgrade-Insecure-Requests': '1'
             },
-            timeout: TIMEOUTS.DEFAULT
+            timeout: Math.min(TIMEOUTS.DEFAULT, SCHOLAR_REQUEST_TIMEOUT_MS)
         };
         logDebug(`Google Scholar Request: GET ${this.scholarUrl}`);
         logDebug('Scholar params:', params);
-        return await ErrorHandler.retryWithBackoff(() => axios.get(this.scholarUrl, config), { context: 'Google Scholar search' });
+        return await ErrorHandler.retryWithBackoff(() => axios.get(this.scholarUrl, config), { context: 'Google Scholar search', maxRetries: 0 });
     }
     /**
      * 解析单个Scholar搜索结果

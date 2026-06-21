@@ -51,6 +51,8 @@ These names can be used with `paper-search run <tool-name>`:
 - `search_medrxiv`
 - `search_semantic_scholar`
 - `search_semantic_snippets`
+- `get_paper_citations`
+- `get_paper_references`
 - `search_iacr`
 - `download_paper`
 - `search_google_scholar`
@@ -96,6 +98,23 @@ These names can be used with `paper-search run <tool-name>`:
 - `search_unpaywall` resolves DOI-based OA metadata and returns at most one result.
 - `search_scihub` is DOI/URL-targeted lookup and is not a metadata search source.
 - `CORE_MAX_RESULTS_CAP` controls the configurable CORE-only result cap. Default is `100`; hard maximum is `500`. Other platforms keep their own current limits.
+
+## Citation Expansion Contract
+
+`get_paper_citations` and `get_paper_references` query Semantic Scholar Graph API for citation graph expansion.
+
+- Provide at least one of `paperId`, `doi`, or `arxivId`.
+- Target priority is `paperId`, then `doi`, then `arxivId`.
+- `doi` is converted to `DOI:<doi>`.
+- `arxivId` is converted to `ARXIV:<id>`.
+- `limit` defaults to `100` and accepts values from `1` to `100`.
+
+Examples:
+
+```bash
+paper-search run get_paper_citations --arg doi="10.1038/nature12373" --arg limit=5 --pretty
+paper-search run get_paper_references --arg doi="10.1038/nature12373" --arg limit=5 --pretty
+```
 
 ## Download Command Contract
 

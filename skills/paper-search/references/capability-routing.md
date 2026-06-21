@@ -1,12 +1,13 @@
 # Capability Routing Reference
 
-Use this reference when mapping a user literature request to one of the four main `paper-search` workflow capabilities.
+Use this reference when mapping a user literature request to one of the five main `paper-search` workflow capabilities.
 
 ## Functional Map
 
 | User Intent | Capability | Preferred Entrypoint | Boundary |
 |---|---|---|---|
 | Search papers, find related work, verify DOI/PMID, screen literature | `metadata_search` | `paper-search search` integrated entrypoint / `paper-search run search_*` precise tool entrypoint | Returns and verifies paper metadata only; Sci-Hub is not a search source |
+| Expand citation graph for a known paper | `citation_expansion` | `paper-search run get_paper_citations` / `paper-search run get_paper_references` | Requires a known `paperId`, DOI, or arXiv ID; returns citing papers or cited references, not general keyword search |
 | Query impact factor, JCR/SSCI/CAS quartiles, JCI, ESI, warnings, journal rank | `journal_metrics` | `paper-search journal-metrics` / `paper-search run query_journal_metrics` | Journal-level lookup, not paper search; requires `EASYSCHOLAR_KEY` |
 | Get or download a verified paper PDF | `pdf_discovery` | `paper-search download` / `paper-search run download_with_fallback` | Verify identity before download; Sci-Hub is the default enabled final fallback |
 | Find Methods text, parameters, software, models, or statistical wording in body snippets | `body_snippet_search` | `paper-search run search_semantic_snippets` | Searches Semantic Scholar OA snippet index; requires `SEMANTIC_SCHOLAR_API_KEY`; not full-text parsing |
@@ -32,7 +33,7 @@ Use `metadata_search` for finding papers, expanding keywords, literature screeni
 - use `--sources a,b,c` for explicit multi-source search
 - use `--platform all` or `--sources all` only when broad recall matters more than precision
 
-It does not call `journal_metrics`, `pdf_discovery`, or `body_snippet_search`.
+It does not call `citation_expansion`, `journal_metrics`, `pdf_discovery`, or `body_snippet_search`.
 
 ```bash
 paper-search search "machine learning" --platform crossref --max-results 5 --pretty
@@ -50,6 +51,17 @@ paper-search run get_paper_by_doi --arg doi="10.xxxx/xxxxx" --pretty
 ```
 
 Do not treat `search_scihub` as a search source. It is DOI/URL-targeted lookup, not `metadata_search`.
+
+## Citation Expansion
+
+Use `citation_expansion` when the user has a known paper and asks which papers cite it or which references it cites.
+
+```bash
+paper-search run get_paper_citations --arg doi="10.1038/nature12373" --arg limit=5 --pretty
+paper-search run get_paper_references --arg doi="10.1038/nature12373" --arg limit=5 --pretty
+```
+
+Target priority is `paperId` > `doi` > `arxivId`. This capability uses Semantic Scholar Graph API and is separate from keyword-based `metadata_search`.
 
 ## Journal Metrics
 
@@ -117,6 +129,7 @@ Only results with `snippetKind="body"` can be used as body-snippet evidence. Res
 |---|---|---|
 | Biomedical, clinical, pharmaceutical, public health | `pubmed` | `pmc`, `europepmc`, `semantic`, `crossref` |
 | Methods/body snippet clues | `search_semantic_snippets` | Use `pubmed`/`semantic` first for titles and synonyms |
+| Citation graph expansion | `get_paper_citations`, `get_paper_references` | Use only after a target paper identifier is known |
 | Computer science, AI, math, physics | `arxiv` | `semantic`, `crossref`, `openalex` |
 | CS bibliographies and conference metadata | `dblp` | `acm`, `usenix`, `openreview`, `ieee` requires key |
 | Cross-disciplinary coverage | `crossref` | `openalex`, `semantic` |

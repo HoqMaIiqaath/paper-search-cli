@@ -43,29 +43,44 @@ export class BioRxivSearcher extends PaperSource {
             const days = options.days || 30;
             const endDate = new Date().toISOString().split('T')[0];
             const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-            // 构建搜索URL
-            const searchUrl = `${this.baseUrl}/${startDate}/${endDate}`;
-            const params = {
-                cursor: 0
-            };
-            // 添加分类过滤
-            if (query && query !== '*') {
-                // 将查询转换为分类格式
-                const category = query.toLowerCase().replace(/\s+/g, '_');
-                params.category = category;
+            const maxResults = options.maxResults || 10;
+            const maxPages = Math.max(1, Math.min(25, Math.ceil(maxResults / 30) + 10));
+            const papers = [];
+            const seen = new Set();
+            let cursor = 0;
+            let total;
+            let pages = 0;
+            while (papers.length < maxResults && pages < maxPages && (total === undefined || cursor < total)) {
+                const searchUrl = `${this.baseUrl}/${startDate}/${endDate}/${cursor}`;
+                logDebug(`${this.serverType} API Request: GET ${searchUrl}`);
+                await this.rateLimiter.waitForPermission();
+                const response = await ErrorHandler.retryWithBackoff(() => axios.get(searchUrl, {
+                    timeout: TIMEOUTS.DEFAULT,
+                    headers: { 'User-Agent': USER_AGENT }
+                }), { context: `${this.serverType} search` });
+                logDebug(`${this.serverType} API Response: ${response.status} ${response.statusText}`);
+                const collection = Array.isArray(response.data?.collection) ? response.data.collection : [];
+                const message = Array.isArray(response.data?.messages) ? response.data.messages[0] : undefined;
+                const parsedTotal = Number(message?.total);
+                if (Number.isFinite(parsedTotal))
+                    total = parsedTotal;
+                const pagePapers = this.parseSearchResponse(response.data, query, options);
+                for (const paper of pagePapers) {
+                    const key = paper.doi || paper.paperId || paper.title;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        papers.push(paper);
+                        if (papers.length >= maxResults)
+                            break;
+                    }
+                }
+                if (collection.length === 0)
+                    break;
+                cursor += collection.length;
+                pages += 1;
             }
-            logDebug(`${this.serverType} API Request: GET ${searchUrl}`);
-            logDebug(`${this.serverType} Request params:`, params);
-            await this.rateLimiter.waitForPermission();
-            const response = await ErrorHandler.retryWithBackoff(() => axios.get(searchUrl, {
-                params,
-                timeout: TIMEOUTS.DEFAULT,
-                headers: { 'User-Agent': USER_AGENT }
-            }), { context: `${this.serverType} search` });
-            logDebug(`${this.serverType} API Response: ${response.status} ${response.statusText}`);
-            const papers = this.parseSearchResponse(response.data, query, options);
             logDebug(`${this.serverType} Parsed ${papers.length} papers`);
-            return papers.slice(0, options.maxResults || 10);
+            return papers.slice(0, maxResults);
         }
         catch (error) {
             logDebug(`${this.serverType} Search Error:`, error.message);
@@ -128,6 +143,10 @@ export class BioRxivSearcher extends PaperSource {
                 item.abstract.toLowerCase().includes(queryLower) ||
                 item.authors.toLowerCase().includes(queryLower) ||
                 item.category.toLowerCase().includes(queryLower));
+        }
+        if (options.category && options.category.trim()) {
+            const categoryLower = options.category.toLowerCase().replace(/_/g, ' ');
+            filteredCollection = filteredCollection.filter(item => item.category.toLowerCase().replace(/_/g, ' ').includes(categoryLower));
         }
         return filteredCollection.map(item => this.parseBioRxivPaper(item))
             .filter(paper => paper !== null);

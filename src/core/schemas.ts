@@ -121,6 +121,18 @@ export const SearchSemanticSnippetsSchema = z
   })
   .strip();
 
+export const CitationLookupSchema = z
+  .object({
+    paperId: z.coerce.string().min(1).optional(),
+    doi: z.coerce.string().min(1).optional(),
+    arxivId: z.coerce.string().min(1).optional(),
+    limit: z.number().int().min(1).max(100).optional().default(100)
+  })
+  .strip()
+  .refine(value => Boolean(value.paperId || value.doi || value.arxivId), {
+    message: 'Provide paperId, doi, or arxivId'
+  });
+
 export const SearchIACRSchema = z
   .object({
     query: z.string().min(1),
@@ -327,6 +339,8 @@ export type ToolName =
   | 'search_medrxiv'
   | 'search_semantic_scholar'
   | 'search_semantic_snippets'
+  | 'get_paper_citations'
+  | 'get_paper_references'
   | 'search_iacr'
   | 'download_paper'
   | 'search_google_scholar'
@@ -370,6 +384,9 @@ export function parseToolArgs(toolName: ToolName, args: unknown): any {
       return SearchSemanticScholarSchema.parse(args);
     case 'search_semantic_snippets':
       return SearchSemanticSnippetsSchema.parse(args);
+    case 'get_paper_citations':
+    case 'get_paper_references':
+      return CitationLookupSchema.parse(args);
     case 'search_iacr':
       return SearchIACRSchema.parse(args);
     case 'download_paper':

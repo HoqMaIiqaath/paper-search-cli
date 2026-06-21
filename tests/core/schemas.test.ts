@@ -55,4 +55,41 @@ describe('schemas', () => {
       'CORE maxResults must be less than or equal to 500'
     );
   });
+
+  it('requires one citation target identifier', () => {
+    expect(() => parseToolArgs('get_paper_citations', {})).toThrow('Provide paperId, doi, or arxivId');
+    expect(() => parseToolArgs('get_paper_references', { limit: 5 })).toThrow('Provide paperId, doi, or arxivId');
+  });
+
+  it('defaults citation lookup limit to 100', () => {
+    expect(parseToolArgs('get_paper_citations', { doi: '10.1000/example' })).toEqual({
+      doi: '10.1000/example',
+      limit: 100
+    });
+  });
+
+  it('bounds citation lookup limit to 1 through 100', () => {
+    expect(() => parseToolArgs('get_paper_citations', { doi: '10.1000/example', limit: 0 })).toThrow(
+      'Number must be greater than or equal to 1'
+    );
+    expect(() => parseToolArgs('get_paper_citations', { doi: '10.1000/example', limit: 101 })).toThrow(
+      'Number must be less than or equal to 100'
+    );
+  });
+
+  it('preserves citation identifiers for handleToolCall priority resolution', () => {
+    expect(
+      parseToolArgs('get_paper_references', {
+        paperId: 'paper-1',
+        doi: '10.1000/example',
+        arxivId: '2401.00001',
+        limit: 3
+      })
+    ).toEqual({
+      paperId: 'paper-1',
+      doi: '10.1000/example',
+      arxivId: '2401.00001',
+      limit: 3
+    });
+  });
 });

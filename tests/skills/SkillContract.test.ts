@@ -68,7 +68,7 @@ describe('paper-search bundled skill contract', () => {
     expect(management).toContain('Capability Profile');
   });
 
-  it('clearly exposes the four agent-facing literature capabilities', () => {
+  it('clearly exposes the five agent-facing literature capabilities', () => {
     const skill = readSkillFile('SKILL.md');
     const routing = readSkillFile('references/capability-routing.md');
 
@@ -76,16 +76,18 @@ describe('paper-search bundled skill contract', () => {
     expect(skill).toContain('| 用户意图 | 能力名 | 首选入口 | 关键边界 |');
     expect(skill).toContain('`paper-search search` 集成入口');
     expect(skill).toContain('`metadata_search`');
+    expect(skill).toContain('`citation_expansion`');
     expect(skill).toContain('`journal_metrics`');
     expect(skill).toContain('`pdf_discovery`');
     expect(skill).toContain('`body_snippet_search`');
     expect(skill).toContain('Sci-Hub 不属于搜索源');
     expect(routing).toContain('## Functional Map');
     expect(routing).toContain('## Metadata Search');
+    expect(routing).toContain('## Citation Expansion');
     expect(routing).toContain('## Journal Metrics');
     expect(routing).toContain('## PDF Discovery');
     expect(routing).toContain('## Body Snippet Search');
-    expect(routing).toContain('It does not call `journal_metrics`, `pdf_discovery`, or `body_snippet_search`');
+    expect(routing).toContain('It does not call `citation_expansion`, `journal_metrics`, `pdf_discovery`, or `body_snippet_search`');
     expect(routing).toContain('Sci-Hub Fallback is enabled by default');
     expect(routing).toContain('"useSciHub":false');
     expect(skill).not.toContain('友好入口：');

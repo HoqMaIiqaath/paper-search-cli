@@ -2,7 +2,7 @@
 
 [简体中文](README.zh.md) | English
 
-Paper Search CLI is an agent-facing Skill + CLI package built on a standalone Node.js command line tool for academic literature work. It gives AI agents, terminal users, and scripts one reproducible command layer with agent-friendly JSON output for literature metadata search, journal metrics lookup, PDF discovery/download, and paper body snippet search.
+Paper Search CLI is an agent-facing Skill + CLI package built on a standalone Node.js command line tool for academic literature work. It gives AI agents, terminal users, and scripts one reproducible command layer with agent-friendly JSON output for literature metadata search, citation expansion, journal metrics lookup, PDF discovery/download, and paper body snippet search.
 
 ![Node.js](https://img.shields.io/badge/node.js->=18.0.0-green.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-^5.5.3-blue.svg)
@@ -18,6 +18,7 @@ Paper Search CLI is an agent-facing Skill + CLI package built on a standalone No
 | Workflow | Primary commands | What it returns |
 | --- | --- | --- |
 | Literature metadata search | `paper-search search`, `paper-search run search_*` | Paper title, authors, year, journal, DOI, PMID/PMCID, arXiv ID, URL, abstract, and source metadata |
+| Citation expansion | `paper-search run get_paper_citations`, `paper-search run get_paper_references` | Citing papers and cited references for a known Semantic Scholar paper ID, DOI, or arXiv ID |
 | Journal metrics lookup | `paper-search journal-metrics`, `paper-search run query_journal_metrics` | Impact factor, 5-year IF, JCR/SSCI quartile, CAS zone, JCI, ESI, warning flags, and rank fields |
 | PDF discovery and download | `paper-search download`, `paper-search run download_with_fallback` | Verified PDF download paths through native sources, open access, configured entitlement, and Sci-Hub fallback when enabled |
 | Body snippet search | `paper-search run search_semantic_snippets` | Semantic Scholar Open Access body snippets for methods, parameters, and wording clues |
@@ -28,11 +29,11 @@ Paper Search CLI is an agent-facing Skill + CLI package built on a standalone No
 
 | Layer | Responsibility |
 | --- | --- |
-| CLI package body | Executes literature search, journal metrics lookup, PDF discovery/download, body snippet search, and stable JSON output |
+| CLI package body | Executes literature search, citation expansion, journal metrics lookup, PDF discovery/download, body snippet search, and stable JSON output |
 | Bundled Skill | Ships `skills/paper-search` with agent routing rules and focused references; it does not store API keys, cookies, or account credentials |
-| Friendly Management Layer | Provides `doctor`, `smoke`, `skills`, `config`, and `tools` around the four main capabilities: `metadata_search`, `journal_metrics`, `pdf_discovery`, and `body_snippet_search`. `doctor` health reports include masked configuration, Capability Profile, platform/source status, and missing or degraded items; `smoke` checks command wiring and live readiness; `skills` syncs the bundled Skill |
+| Friendly Management Layer | Provides `doctor`, `smoke`, `skills`, `config`, and `tools` around the five main capabilities: `metadata_search`, `citation_expansion`, `journal_metrics`, `pdf_discovery`, and `body_snippet_search`. `doctor` health reports include masked configuration, Capability Profile, platform/source status, and missing or degraded items; `smoke` checks command wiring and live readiness; `skills` syncs the bundled Skill |
 
-The four main capabilities are executed by the CLI package body and reported by the management layer. The Capability Profile also reports `entitled_access` so users can see whether publisher API keys, database keys, TDM tokens, or institutional entitlements are configured. Missing or degraded configuration for one workflow does not make unrelated workflows unavailable.
+The five main capabilities are executed by the CLI package body and reported by the management layer. The Capability Profile also reports `entitled_access` so users can see whether publisher API keys, database keys, TDM tokens, or institutional entitlements are configured. Missing or degraded configuration for one workflow does not make unrelated workflows unavailable.
 
 ## Quick Start
 
@@ -44,13 +45,14 @@ paper-search setup
 paper-search doctor --pretty
 ```
 
-Try the four main workflows:
+Try the five main workflows:
 
 ```bash
 paper-search search "machine learning clinical prediction" --platform crossref --max-results 3 --pretty
+paper-search run get_paper_citations --arg doi="10.1038/nature12373" --arg limit=5 --pretty
 paper-search journal-metrics "Nature" "BMJ" --pretty
 paper-search download 10.48550/arxiv.1201.0490 --platform arxiv --save-path ./downloads
-paper-search run search_semantic_snippets --arg query="propensity score matching" --arg maxResults=3 --pretty
+paper-search run search_semantic_snippets --arg query="propensity score matching" --arg limit=3 --pretty
 ```
 
 Useful checks:
@@ -87,7 +89,7 @@ The quick group table helps choose a source family. The capability matrix below 
 | --- | --- | --- | --- | --- | --- | --- |
 | Crossref | ✅ Yes | ❌ No | ❌ No | ✅ Yes | ❌ None | Default broad metadata source |
 | OpenAlex | ✅ Yes | 🟡 Conditional | ❌ No | ✅ Yes | ❌ None | Free metadata; OA links can help PDF fallback |
-| Semantic Scholar | ✅ Yes | 🟡 Conditional | ✅ Body snippets | ✅ Yes | 🟡 Optional; snippets require `SEMANTIC_SCHOLAR_API_KEY` | Good for AI/CS and body snippet clues |
+| Semantic Scholar | ✅ Yes | 🟡 Conditional | ✅ Body snippets | ✅ Yes | 🟡 Optional; snippets require `SEMANTIC_SCHOLAR_API_KEY` | Good for AI/CS, citation expansion, and body snippet clues |
 | Google Scholar | ✅ Yes | ❌ No | ❌ No | ✅ Yes | ❌ None | Broad discovery through page parsing |
 
 #### Journal Metrics
@@ -205,7 +207,7 @@ Useful key dashboards:
 
 ## Agent Skill
 
-The npm package ships a bundled agent Skill at `skills/paper-search/SKILL.md`. Terminal users can use the CLI directly; AI agent workflows should install or sync the Skill so the agent can route the four main workflows correctly.
+The npm package ships a bundled agent Skill at `skills/paper-search/SKILL.md`. Terminal users can use the CLI directly; AI agent workflows should install or sync the Skill so the agent can route the five main workflows correctly.
 
 ```bash
 paper-search setup --install-skills agents

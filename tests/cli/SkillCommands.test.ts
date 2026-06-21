@@ -46,6 +46,7 @@ describe('skill CLI commands', () => {
     expect(output.cases.map((item: any) => item.name)).toEqual(
       expect.arrayContaining([
         'metadata_search excludes Sci-Hub',
+        'citation_expansion uses Semantic Scholar Graph API',
         'pdf_discovery has source groups',
         'journal_metrics uses EASYSCHOLAR_KEY',
         'skill status runs offline'

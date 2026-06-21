@@ -5,6 +5,7 @@ import { logDebug } from '../utils/Logger.js';
 import { searchMultipleSources } from '../services/MultiSourceSearchService.js';
 import { downloadWithFallback } from '../services/OpenAccessFallbackService.js';
 import { queryJournalMetrics } from '../services/JournalMetricsService.js';
+import CitationService from '../services/CitationService.js';
 import { withTimeout } from '../utils/SecurityUtils.js';
 import { getGenericSearchToolPlatform, getPlatformMetadata, isPlatformAlias, resolvePlatformId } from './platformMetadata.js';
 function jsonTextResponse(text) {
@@ -46,6 +47,24 @@ function normalizeDoi(value) {
 }
 function paperMatchesDoi(paper, doi) {
     return normalizeDoi(paper.doi || '') === normalizeDoi(doi);
+}
+function resolveCitationTarget(args) {
+    if (args.paperId)
+        return args.paperId;
+    if (args.doi)
+        return `DOI:${args.doi}`;
+    if (args.arxivId)
+        return `ARXIV:${args.arxivId}`;
+    throw new Error('Provide paperId, doi, or arxivId');
+}
+function citationResponse(target, relation, papers) {
+    return {
+        target,
+        relation,
+        provider: 'semantic_scholar',
+        total: papers.length,
+        papers
+    };
 }
 async function handleGenericSearch(platform, args, searchers) {
     const resolvedPlatform = resolvePlatformId(platform);
@@ -178,6 +197,20 @@ export async function handleToolCall(toolNameRaw, rawArgs, searchers) {
             const results = await searchers.semantic.searchSnippets(args);
             const bodyCount = results.filter(result => result.snippet.snippetKind === 'body').length;
             return jsonTextResponse(`Found ${results.length} Semantic Scholar snippet(s), including ${bodyCount} body snippet(s).\n\n${JSON.stringify(results, null, 2)}`);
+        }
+        case 'get_paper_citations': {
+            const target = resolveCitationTarget(args);
+            const service = new CitationService();
+            const papers = await service.getCitations(target, args.limit);
+            const result = citationResponse(target, 'citations', papers);
+            return jsonTextResponse(`Found ${papers.length} citing paper(s).\n\n${JSON.stringify(result, null, 2)}`);
+        }
+        case 'get_paper_references': {
+            const target = resolveCitationTarget(args);
+            const service = new CitationService();
+            const papers = await service.getReferences(target, args.limit);
+            const result = citationResponse(target, 'references', papers);
+            return jsonTextResponse(`Found ${papers.length} cited reference(s).\n\n${JSON.stringify(result, null, 2)}`);
         }
         case 'search_iacr': {
             const { query, maxResults, fetchDetails } = args;

@@ -49,6 +49,7 @@ export function buildCapabilityProfile() {
     const configuredKeys = configuredConfigKeys();
     const entries = [
         metadataSearchEntry(configuredKeys),
+        citationExpansionEntry(),
         bodySnippetSearchEntry(configuredKeys),
         journalMetricsEntry(configuredKeys),
         pdfDiscoveryEntry(configuredKeys),
@@ -75,6 +76,19 @@ function metadataSearchEntry(configuredKeys) {
             missing_entitled_sources: missingEntitled
         },
         optionalKeys: unique(Object.values(ENTITLED_KEY_BY_SOURCE).flat())
+    };
+}
+function citationExpansionEntry() {
+    return {
+        id: 'citation_expansion',
+        status: 'available',
+        reason: 'Semantic Scholar Graph API citation expansion is available; SEMANTIC_SCHOLAR_API_KEY is optional for higher quota.',
+        configured: ['semantic_scholar_graph'],
+        missing: [],
+        sourceGroups: {
+            citation_sources: ['semantic_scholar_graph']
+        },
+        optionalKeys: ['SEMANTIC_SCHOLAR_API_KEY']
     };
 }
 function bodySnippetSearchEntry(configuredKeys) {

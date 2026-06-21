@@ -41,6 +41,9 @@ describe('capabilityProfile', () => {
     expect(byId.metadata_search.status).toBe('available');
     expect(byId.metadata_search.configured).not.toContain('scihub');
     expect(byId.metadata_search.reason).toContain('Sci-Hub is excluded');
+    expect(byId.citation_expansion.status).toBe('available');
+    expect(byId.citation_expansion.configured).toEqual(['semantic_scholar_graph']);
+    expect(byId.citation_expansion.optionalKeys).toEqual(['SEMANTIC_SCHOLAR_API_KEY']);
     expect(byId.body_snippet_search.status).toBe('unavailable');
     expect(byId.body_snippet_search.reason).toContain('SEMANTIC_SCHOLAR_API_KEY');
     expect(byId.journal_metrics.status).toBe('unavailable');

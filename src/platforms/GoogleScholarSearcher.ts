@@ -19,6 +19,8 @@ interface GoogleScholarOptions extends SearchOptions {
   yearHigh?: number;
 }
 
+const SCHOLAR_REQUEST_TIMEOUT_MS = 10000;
+
 export class GoogleScholarSearcher extends PaperSource {
   private readonly scholarUrl = 'https://scholar.google.com/scholar';
   private readonly userAgents = [
@@ -153,7 +155,7 @@ export class GoogleScholarSearcher extends PaperSource {
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1'
       },
-      timeout: TIMEOUTS.DEFAULT
+      timeout: Math.min(TIMEOUTS.DEFAULT, SCHOLAR_REQUEST_TIMEOUT_MS)
     };
 
     logDebug(`Google Scholar Request: GET ${this.scholarUrl}`);
@@ -161,7 +163,7 @@ export class GoogleScholarSearcher extends PaperSource {
 
     return await ErrorHandler.retryWithBackoff(
       () => axios.get(this.scholarUrl, config),
-      { context: 'Google Scholar search' }
+      { context: 'Google Scholar search', maxRetries: 0 }
     );
   }
 

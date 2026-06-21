@@ -63,6 +63,7 @@ export class RateLimiter {
         resolve,
         timestamp: Date.now()
       });
+      this.intervalHandle.ref?.();
       
       if (this.debug) {
         logDebug(`RateLimiter: Request queued, ${this.pendingRequests.length} waiting`);
@@ -106,6 +107,10 @@ export class RateLimiter {
         }
       }
     }
+
+    if (this.pendingRequests.length === 0) {
+      this.intervalHandle.unref?.();
+    }
   }
 
   /**
@@ -144,6 +149,10 @@ export class RateLimiter {
       } else {
         break;
       }
+    }
+
+    if (this.pendingRequests.length === 0) {
+      this.intervalHandle.unref?.();
     }
     
     if (this.debug && removedCount > 0) {

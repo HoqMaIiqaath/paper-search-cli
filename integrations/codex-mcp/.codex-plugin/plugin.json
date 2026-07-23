@@ -1,0 +1,38 @@
+{
+  "name": "paper-research-workflow",
+  "version": "0.1.0",
+  "description": "Evidence-traceable scholarly search, citation expansion, open-PDF resolution, and visualization workflows powered by paper-search-cli.",
+  "author": {
+    "name": "HoqMaIiqaath",
+    "url": "https://github.com/HoqMaIiqaath"
+  },
+  "homepage": "https://github.com/HoqMaIiqaath/paper-search-cli",
+  "repository": "https://github.com/HoqMaIiqaath/paper-search-cli",
+  "license": "MIT",
+  "keywords": [
+    "academic-research",
+    "papers",
+    "citations",
+    "evidence",
+    "visualization"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Paper Research Workflow",
+    "shortDescription": "Search, verify, and visualize scholarly evidence.",
+    "longDescription": "Plan reproducible literature searches, query complementary scholarly sources, normalize and deduplicate papers, expand citation networks, resolve open PDFs, preserve evidence levels, and prepare bounded datasets for interactive visualization.",
+    "developerName": "HoqMaIiqaath",
+    "category": "Productivity",
+    "capabilities": [
+      "Search",
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "检索一个主题并生成可追溯的阅读清单。",
+      "从一篇核心论文扩展引用网络并可视化。",
+      "比较多篇论文的方法、证据等级与局限。"
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

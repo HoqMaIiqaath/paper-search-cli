@@ -11,7 +11,7 @@ Paper Search CLI is an agent-facing Skill + CLI package built on a standalone No
 ![Version](https://img.shields.io/badge/version-0.3.4-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
-[Quick Start](#quick-start) | [Architecture](#architecture) | [Configuration](#configuration) | [Agent Skill](#agent-skill) | [Supported Platforms](#supported-platforms) | [Commands](#commands) | [Troubleshooting](#troubleshooting)
+[Quick Start](#quick-start) | [Architecture](#architecture) | [Codex MCP](#codex-mcp-integration) | [Configuration](#configuration) | [Agent Skill](#agent-skill) | [Supported Platforms](#supported-platforms) | [Commands](#commands) | [Troubleshooting](#troubleshooting)
 
 ## Core Workflows
 
@@ -25,7 +25,7 @@ Paper Search CLI is an agent-facing Skill + CLI package built on a standalone No
 
 ## Architecture
 
-`paper-search` is not an MCP server. It is a normal CLI that AI agents can call through the bundled Skill, while terminal users and scripts can call the same `paper-search` command directly.
+The core `paper-search` package is a normal CLI rather than an MCP server. AI agents can call it through the bundled Skill, while terminal users and scripts can call the same `paper-search` command directly. This fork also includes an optional local Codex MCP bridge under [`integrations/codex-mcp`](integrations/codex-mcp/).
 
 | Layer | Responsibility |
 | --- | --- |
@@ -63,6 +63,32 @@ paper-search doctor --format text
 paper-search smoke --mock --pretty
 paper-search skills status --pretty
 ```
+
+## Codex MCP Integration
+
+This fork includes an optional local stdio MCP bridge for users who want to run
+the complete research workflow inside Codex. It reads the runtime
+`paper-search tools` catalog at startup, so all current CLI tools and their JSON
+Schemas are exposed without maintaining a second handwritten tool list.
+
+The bridge currently exposes the 36 CLI tools plus three higher-level research
+workflow tools. It restricts calls to names reported by the CLI, passes
+arguments without shell interpolation, confines downloads to a configured
+directory, and keeps Sci-Hub disabled unless explicitly requested.
+
+```powershell
+git clone https://github.com/HoqMaIiqaath/paper-search-cli.git
+cd paper-search-cli\integrations\codex-mcp
+npm install
+npm run check
+
+$mcpEntry = (Resolve-Path .\dist\stdio.js).Path
+codex mcp add paper-research -- node $mcpEntry
+```
+
+Restart Codex or open a new task after registration. See the
+[integration README](integrations/codex-mcp/README.md) for configuration,
+security boundaries, and usage examples.
 
 ## Supported Platforms
 

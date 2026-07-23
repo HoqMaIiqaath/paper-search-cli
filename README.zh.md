@@ -11,7 +11,7 @@ Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 
 ![Version](https://img.shields.io/badge/version-0.3.4-blue.svg)
 [![LinuxDo](https://img.shields.io/badge/LinuxDo-community-1f6feb)](https://linux.do)
 
-[快速开始](#快速开始) | [架构说明](#架构说明) | [配置](#配置) | [Agent Skill](#agent-skill) | [支持平台](#支持平台) | [命令](#命令) | [排障](#排障)
+[快速开始](#快速开始) | [架构说明](#架构说明) | [Codex MCP](#codex-mcp-适配) | [配置](#配置) | [Agent Skill](#agent-skill) | [支持平台](#支持平台) | [命令](#命令) | [排障](#排障)
 
 ## 核心功能
 
@@ -25,7 +25,7 @@ Paper Search CLI 是一个面向 AI agent 的 Skill + CLI 包，基于独立的 
 
 ## 架构说明
 
-`paper-search` 不是 MCP Server，而是普通 CLI。AI 工具可以通过随包发布的 Skill 调用它，终端用户和脚本也可以直接调用同一个 `paper-search` 命令。
+`paper-search` 核心包是普通 CLI，而不是 MCP Server。AI 工具可以通过随包发布的 Skill 调用它，终端用户和脚本也可以直接调用同一个 `paper-search` 命令。这个 fork 还在 [`integrations/codex-mcp`](integrations/codex-mcp/) 中提供了可选的本地 Codex MCP 适配。
 
 | 层 | 负责什么 |
 | --- | --- |
@@ -63,6 +63,25 @@ paper-search doctor --format text
 paper-search smoke --mock --pretty
 paper-search skills status --pretty
 ```
+
+## Codex MCP 适配
+
+这个 fork 包含一个可选的本地 stdio MCP，适合希望在 Codex 内完成完整论文研究流程的用户。服务启动时会读取 `paper-search tools` 的运行时目录，因此 CLI 当前提供的全部工具及 JSON Schema 都能自动暴露，无需维护第二套手写工具列表。
+
+目前 MCP 会暴露 36 个 CLI 工具和 3 个高阶研究工作流工具。它只允许调用 CLI 实际报告的工具名，参数不经过 Shell 拼接，下载路径被限制在指定目录内，并且只有用户显式启用时才会使用 Sci-Hub。
+
+```powershell
+git clone https://github.com/HoqMaIiqaath/paper-search-cli.git
+cd paper-search-cli\integrations\codex-mcp
+npm install
+npm run check
+
+$mcpEntry = (Resolve-Path .\dist\stdio.js).Path
+codex mcp add paper-research -- node $mcpEntry
+```
+
+注册后请重启 Codex 或新建任务。配置方法、安全边界和使用示例见
+[适配说明](integrations/codex-mcp/README.md)。
 
 ## 支持平台
 

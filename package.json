@@ -88,6 +88,9 @@
       "**/tests/**/*.test.ts",
       "**/__tests__/**/*.test.ts"
     ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/integrations/"
+    ],
     "setupFilesAfterEnv": [
       "<rootDir>/tests/setup.ts"
     ],

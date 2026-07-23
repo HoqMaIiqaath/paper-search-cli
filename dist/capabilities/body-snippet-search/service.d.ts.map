@@ -1,1 +1,0 @@
-{"version":3,"file":"service.d.ts","sourceRoot":"","sources":["../../../src/capabilities/body-snippet-search/service.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,yBAAyB,CAAC;AACzD,OAAO,KAAK,EAAE,qBAAqB,EAAE,yBAAyB,EAAE,MAAM,YAAY,CAAC;AAEnF,wBAAsB,kBAAkB,CACtC,SAAS,EAAE,SAAS,EACpB,IAAI,EAAE,yBAAyB,GAC9B,OAAO,CAAC,qBAAqB,EAAE,CAAC,CAElC"}

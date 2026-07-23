@@ -1,0 +1,109 @@
+name: Sync upstream paper-search-cli
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-update:
+    runs-on: ubuntu-latest
+    outputs:
+      update: ${{ steps.versions.outputs.update }}
+      latest: ${{ steps.versions.outputs.latest }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out fork with a read-only token
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install current dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Compare versions
+        id: versions
+        shell: bash
+        run: |
+          current="$(node -p "require('./package.json').dependencies['paper-search-cli']")"
+          latest="$(npm view paper-search-cli version)"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$current" = "$latest" ]; then
+            echo "update=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "update=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update pinned upstream dependency without lifecycle scripts
+        if: steps.versions.outputs.update == 'true'
+        run: npm install --ignore-scripts --save-exact "paper-search-cli@${{ steps.versions.outputs.latest }}"
+
+      - name: Validate build, real CLI contract, and MCP handshake
+        if: steps.versions.outputs.update == 'true'
+        run: npm run check
+
+      - name: Upload validated manifests
+        if: steps.versions.outputs.update == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: validated-upstream-update
+          path: |
+            package.json
+            package-lock.json
+          if-no-files-found: error
+
+  create-update-pr:
+    needs: validate-update
+    if: needs.validate-update.outputs.update == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+
+      - name: Download validated manifests
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: validated-upstream-update
+          path: .
+
+      - name: Create fork-local update pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ needs.validate-update.outputs.latest }}"
+          branch="automation/paper-search-cli-$version"
+          base="${{ github.event.repository.default_branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch:refs/remotes/origin/$branch" || true
+          git checkout -B "$branch"
+          git add package.json package-lock.json
+          git commit -m "chore: update paper-search-cli to $version"
+          git push --force-with-lease origin "$branch"
+
+          existing="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" --state open --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh pr create \
+              --repo "$GITHUB_REPOSITORY" \
+              --base "$base" \
+              --head "$branch" \
+              --title "chore: update paper-search-cli to $version" \
+              --body "Automated fork-local update of the pinned upstream CLI dependency. The build, real CLI contract, and MCP handshake passed in a read-only job before this PR was created."
+          fi

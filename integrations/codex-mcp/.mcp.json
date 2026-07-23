@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "paper-research": {
-      "command": "node",
-      "args": ["./dist/stdio.js"],
-      "cwd": "."
-    }
-  }
-}
